@@ -1,6 +1,6 @@
-# IDC Terraform Provider (Terraform Plugin Framework)
+# ITAC Terraform Provider (Terraform Plugin Framework)
 
-This IDC provider plugin brings the power of Hashicorp's Terraform to Intel Developer Cloud (IDC). It allows developers to model and manage their IDC Resources through HCL IaaC (Infrastructure as a Code).
+This ITAC provider plugin brings the power of Hashicorp's Terraform to Intel Tiver AI Cloud (ITAC). It allows developers to model and manage their ITAC Resources through HCL IaaC (Infrastructure as a Code).
 
 ## Requirements
 
@@ -21,7 +21,7 @@ go install
 
 Currently, this plugin is not published to terraform registry and is available to be used in Local Dev mode locally. 
 
-## Trying out the IDC Provider
+## Trying out the ITAC Provider
 
 If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (see [Requirements](#requirements) above).
 
@@ -35,7 +35,7 @@ Edit `~/.terraformrc` file and add following config block
 provider_installation {
 
   dev_overrides {
-      "cloud.intel.com/services/idc" = "<$GOPATH>/bin"
+      "cloud.intel.com/services/itac" = "<$GOPATH>/bin"
   }
 
   # For all other providers, install them directly from their origin provider
@@ -49,18 +49,11 @@ provider_installation {
 For creating resources on IDC, it requires auth credentials. More specifically, currently it requires following `two` environment variables to be configured.
 
 ```
-export IDC_CLOUDACCOUNT=<cloudaccount>
-export IDC_APITOKEN=<JWT Token >
-```
-
-You can optionally, download and setup the following CLI tool to fetch it automatically.
-
-[IRR Binary Download](https://github.com/intel-innersource/applications.web.saas.optimization-registry.api/releases/tag/v0.23.5)
-
-```
-response=$(irr_darwin idc login --interactive --json)
-IDC_CLOUDACCOUNT=$(echo $response | jq -r ".account_id")
-IDC_APITOKEN=$(echo $response | jq -r ".tokens.access_token")
+export ITAC_CLOUDACCOUNT=<cloudaccount>
+export ITAC_CLIENT_ID==<Client ID >
+export ITAC_CLIENT_SECRET=<Client secret>
 ```
 
 ## Next Steps
+
+
