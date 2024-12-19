@@ -1,57 +1,87 @@
-# Contributing
+## Contributing In General
+Our project welcomes external contributions. If you have an itch, please feel
+free to scratch it.
 
-### License
+### This md is under construction. For now, please refer to the information in README.md.
 
-<PROJECT NAME> is licensed under the terms in [LICENSE]<link to license file in repo>. By contributing to the project, you agree to the license and copyright terms therein and release your contribution under these terms.
+To contribute code or documentation, please submit a **FIXME** [pull request](https://github.com/ibm/repo-template/pulls).
 
-### Sign your work
+A good way to familiarize yourself with the codebase and contribution process is
+to look for and tackle low-hanging fruit in the **FIXME** [issue tracker](https://github.com/ibm/repo-template/issues).
+Before embarking on a more ambitious contribution, please quickly [get in touch](#communication) with us.
 
-Please use the sign-off line at the end of the patch. Your signature certifies that you wrote the patch or otherwise have the right to pass it on as an open-source patch. The rules are pretty simple: if you can certify
-the below (from [developercertificate.org](http://developercertificate.org/)):
+**Note: We appreciate your effort, and want to avoid a situation where a contribution
+requires extensive rework (by you or by us), sits in backlog for a long time, or
+cannot be accepted at all!**
+
+### Proposing new features
+
+If you would like to implement a new feature, please **FIXME** [raise an issue](https://github.com/ibm/repo-template/issues)
+before sending a pull request so the feature can be discussed. This is to avoid
+you wasting your valuable time working on a feature that the project developers
+are not interested in accepting into the code base.
+
+### Fixing bugs
+
+If you would like to fix a bug, please **FIXME** [raise an issue](https://github.com/ibm/repo-template/issues) before sending a
+pull request so it can be tracked.
+
+### Merge approval
+
+The project maintainers use LGTM (Looks Good To Me) in comments on the code
+review to indicate acceptance. A change requires LGTMs from two of the
+maintainers of each component affected.
+
+For a list of the maintainers, see the [MAINTAINERS.md](MAINTAINERS.md) page.
+
+## Legal
+
+Each source file must include a license header for the Apache
+Software License 2.0. Using the SPDX format is the simplest approach.
+e.g.
 
 ```
-Developer Certificate of Origin
-Version 1.1
+/*
+Copyright <holder> All Rights Reserved.
 
-Copyright (C) 2004, 2006 The Linux Foundation and its contributors.
-660 York Street, Suite 102,
-San Francisco, CA 94110 USA
-
-Everyone is permitted to copy and distribute verbatim copies of this
-license document, but changing it is not allowed.
-
-Developer's Certificate of Origin 1.1
-
-By making a contribution to this project, I certify that:
-
-(a) The contribution was created in whole or in part by me and I
-    have the right to submit it under the open source license
-    indicated in the file; or
-
-(b) The contribution is based upon previous work that, to the best
-    of my knowledge, is covered under an appropriate open source
-    license and I have the right under that license to submit that
-    work with modifications, whether created in whole or in part
-    by me, under the same open source license (unless I am
-    permitted to submit under a different license), as indicated
-    in the file; or
-
-(c) The contribution was provided directly to me by some other
-    person who certified (a), (b) or (c) and I have not modified
-    it.
-
-(d) I understand and agree that this project and the contribution
-    are public and that a record of the contribution (including all
-    personal information I submit with it, including my sign-off) is
-    maintained indefinitely and may be redistributed consistent with
-    this project or the open source license(s) involved.
+SPDX-License-Identifier: Apache-2.0
+*/
 ```
 
-Then you just add a line to every git commit message:
+We have tried to make it as easy as possible to make contributions. This
+applies to how we handle the legal aspects of contribution. We use the
+same approach - the [Developer's Certificate of Origin 1.1 (DCO)](https://github.com/hyperledger/fabric/blob/master/docs/source/DCO1.1.txt) - that the Linux® Kernel [community](https://elinux.org/Developer_Certificate_Of_Origin)
+uses to manage code contributions.
 
-    Signed-off-by: Joe Smith <joe.smith@email.com>
+We simply ask that when submitting a patch for review, the developer
+must include a sign-off statement in the commit message.
 
-Use your real name (sorry, no pseudonyms or anonymous contributions.)
+Here is an example Signed-off-by line, which indicates that the
+submitter accepts the DCO:
 
-If you set your `user.name` and `user.email` git configs, you can sign your
-commit automatically with `git commit -s`.
+```
+Signed-off-by: John Doe <john.doe@example.com>
+```
+
+You can include this automatically when you commit a change to your
+local git repository using the following command:
+
+```
+git commit -s
+```
+
+## Communication
+**FIXME** Please feel free to connect with us on our [Slack channel](link).
+
+## Setup
+**FIXME** Please add any special setup instructions for your project to help the developer
+become productive quickly.
+
+## Testing
+**FIXME** Please provide information that helps the developer test any changes they make
+before submitting.
+
+## Coding style guidelines
+**FIXME** Optional, but recommended: please share any specific style guidelines you might
+have for your project.
+
