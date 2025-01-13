@@ -45,12 +45,12 @@ provider_installation {
 }
 ```
 
-## IDC Login Credentials
-For creating resources on IDC, it requires auth credentials. More specifically, currently it requires following `two` environment variables to be configured.
+## ITAC Login Credentials
+For creating resources on ITAC, it requires auth credentials. More specifically, currently it requires following `three` environment variables to be configured.
 
 ```
 export ITAC_CLOUDACCOUNT=<cloudaccount>
-export ITAC_CLIENT_ID==<Client ID >
+export ITAC_CLIENT_ID=<Client ID >
 export ITAC_CLIENT_SECRET=<Client secret>
 ```
 
