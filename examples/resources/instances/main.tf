@@ -7,14 +7,14 @@ terraform {
 }
 
 provider "intelcloud" {
-   region = "us-staging-1"
+  region = "us-staging-1"
 }
 
 data "intelcloud_machine_images" "image" {
   most_recent = true
   filters = [
     {
-      name = "name"
+      name   = "name"
       values = ["ubuntu-2204-jammy"]
     }
   ]
@@ -23,12 +23,12 @@ data "intelcloud_machine_images" "image" {
 resource "intelcloud_instance" "example" {
   name = "tf-demo-instance"
   spec = {
-    instance_type = "vm-spr-sml"
-    machine_image = data.intelcloud_machine_images.image.result.name
+    instance_type        = "vm-spr-sml"
+    machine_image        = data.intelcloud_machine_images.image.result.name
     ssh_public_key_names = ["shrimac"]
   }
 }
 
 output "instance_order" {
-	value = intelcloud_instance.example
+  value = intelcloud_instance.example
 }

@@ -1,32 +1,26 @@
 terraform {
   required_providers {
-    idc = {
-      source = "hashicorps/idc"
+    intelcloud = {
+      source = "hashicorps/intelcloud"
     }
   }
 }
 
 
-provider "idc" {
-   region = "us-region-1"
+provider "intelcloud" {
+  region = "us-region-1"
 }
 
-data "idc_machine_images" "images" {
+data "intelcloud_machine_images" "images" {
   most_recent = true
   filters = [
     {
-      name = "name"
+      name   = "name"
       values = ["ubuntu-2204-jammy"]
     }
   ]
 }
 
-# data "idc_instance_types" "insttypes" {}
-
 output "print_images" {
-	value = data.idc_machine_images.images
+  value = data.intelcloud_machine_images.images
 }
-
-# output "print_insttypes" {
-# 	value = data.idc_instance_types.insttypes
-# }
