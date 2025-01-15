@@ -9,3 +9,5 @@
 .vscode
 dist/
 bin/
+**/terraform.state
+**/terraform.state.*
