@@ -1,0 +1,11 @@
+.*.swp
+./*.tfstate
+.DS_Store
+.idea
+.terraform.lock.hcl
+.terraform.tfstate.lock.info
+.terraform/
+.vagrant/
+.vscode
+dist/
+bin/
