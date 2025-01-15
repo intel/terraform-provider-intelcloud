@@ -1,13 +1,13 @@
 terraform {
   required_providers {
-    idc = {
-      source = "hashicorps/idc"
+    intelcloud = {
+      source = "hashicorps/intelcloud"
     }
   }
 }
 
 provider "idc" {
-   region = var.idc_region
+  region = var.idc_region
 }
 
 # data "cloudinit_config" "ansible" {
@@ -39,14 +39,14 @@ provider "idc" {
 resource "idc_instance" "example" {
   name = var.instance_name
   spec = {
-    instance_type = var.instance_types[var.instance_type]
-    machine_image = var.os_image
+    instance_type        = var.instance_types[var.instance_type]
+    machine_image        = var.os_image
     ssh_public_key_names = [var.ssh_key_name]
-    user_data = file("./cloud_init.yaml")
+    user_data            = file("./cloud_init.yaml")
   }
   # depends_on = [idc_sshkey.example]
 }
 
 output "instance_order" {
-	value = idc_instance.example
+  value = idc_instance.example
 }
