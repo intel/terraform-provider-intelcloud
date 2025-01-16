@@ -1,13 +1,15 @@
 terraform {
   required_providers {
-    intelcloud = {
-      source = "hashicorps/intelcloud"
+    intel-cloud = {
+      source = "intel/intel-cloud"
+      version = "0.0.1"
     }
   }
 }
 
-provider "idc" {
-  region = "staging-1"
+
+provider "intel-cloud" {
+  region = "us-region-1"
 }
 
 resource "idc_object_storage_bucket" "bucket1" {

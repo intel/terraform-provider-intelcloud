@@ -50,7 +50,7 @@ type idcProvider struct {
 
 // Metadata returns the provider type name.
 func (p *idcProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "intelcloud"
+	resp.TypeName = "intel-cloud"
 	resp.Version = p.version
 }
 

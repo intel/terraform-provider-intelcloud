@@ -1,16 +1,18 @@
 terraform {
   required_providers {
-    intelcloud = {
-      source = "hashicorps/intelcloud"
+    intel-cloud = {
+      source = "intel/intel-cloud"
+      version = "0.0.1"
     }
   }
 }
 
-provider "intelcloud" {
-  region = "us-staging-1"
+
+provider "intel-cloud" {
+  region = "us-region-1"
 }
 
-data "intelcloud_machine_images" "image" {
+data "intel-cloud_machine_images" "image" {
   most_recent = true
   filters = [
     {
@@ -20,7 +22,7 @@ data "intelcloud_machine_images" "image" {
   ]
 }
 
-resource "intelcloud_instance" "example" {
+resource "intel-cloud_instance" "example" {
   name = "tf-demo-instance"
   spec = {
     instance_type        = "vm-spr-sml"
@@ -30,5 +32,5 @@ resource "intelcloud_instance" "example" {
 }
 
 output "instance_order" {
-  value = intelcloud_instance.example
+  value = intel-cloud_instance.example
 }
