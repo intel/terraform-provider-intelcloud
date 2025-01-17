@@ -1,4 +1,4 @@
-# ITAC Terraform Provider (Terraform Plugin Framework)
+# ITAC Terraform Provider 
 
 This ITAC provider plugin brings the power of Hashicorp's Terraform to Intel Tiber AI Cloud (ITAC). It allows developers to model and manage their ITAC Resources through HCL IaaC (Infrastructure as a Code).
 
