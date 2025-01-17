@@ -1,18 +1,18 @@
 terraform {
   required_providers {
-    intel-cloud = {
-      source = "intel/intel-cloud"
+    intelcloud = {
+      source = "intel/intelcloud"
       version = "0.0.1"
     }
   }
 }
 
 
-provider "intel-cloud" {
+provider "intelcloud" {
   region = "us-region-1"
 }
 
-data "intel-cloud_machine_images" "images" {
+data "intelcloud_machine_images" "images" {
   most_recent = true
   filters = [
     {
@@ -23,5 +23,5 @@ data "intel-cloud_machine_images" "images" {
 }
 
 output "print_images" {
-  value = data.intel-cloud_machine_images.images
+  value = data.intelcloud_machine_images.images
 }

@@ -50,7 +50,7 @@ type idcProvider struct {
 
 // Metadata returns the provider type name.
 func (p *idcProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "intel-cloud"
+	resp.TypeName = "intelcloud"
 	resp.Version = p.version
 }
 
@@ -206,14 +206,14 @@ func (p *idcProvider) Resources(_ context.Context) []func() resource.Resource {
 
 func discoverITACServiceEndpoint(region string) (string, string) {
 	switch region {
-	case "us-staging-1":
-		return "https://client-token.staging.api.idcservice.net", "https://us-staging-1-sdk-api.eglb.intel.com"
-	case "us-staging-3":
-		return "https://staging-idc-us-3.eglb.intel.com", ""
 	case "us-region-1":
-		return "https://compute-us-region-1-api.cloud.intel.com", ""
+		return "https://client-token.api.idcservice.net/oauth2/token", "https://us-region-1-sdk-api.cloud.intel.com/v1"
 	case "us-region-2":
-		return "https://compute-us-region-2-api.cloud.intel.com", ""
+		return "https://client-token.api.idcservice.net/oauth2/token", "https://us-region-2-sdk-api.cloud.intel.com/v1"
+	case "us-region-3":
+		return "https://client-token.api.idcservice.net/oauth2/token", "https://us-region-3-sdk-api.cloud.intel.com/v1"
+	case "us-region-4":
+		return "https://client-token.api.idcservice.net/oauth2/token", "https://us-region-4-sdk-api.cloud.intel.com/v1"
 	default:
 		return "", ""
 	}
