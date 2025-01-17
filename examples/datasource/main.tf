@@ -2,14 +2,14 @@ terraform {
   required_providers {
     intelcloud = {
       source = "intel/intelcloud"
-      version = "0.0.4"
+      version = "0.0.5"
     }
   }
 }
 
 
 provider "intelcloud" {
-  region = "us-region-1"
+  region = "us-region-2"
 }
 
 data "intelcloud_machine_images" "images" {
