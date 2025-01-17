@@ -2,58 +2,43 @@
 
 This ITAC provider plugin brings the power of Hashicorp's Terraform to Intel Tiber AI Cloud (ITAC). It allows developers to model and manage their ITAC Resources through HCL IaaC (Infrastructure as a Code).
 
+Useful links:
+- [ITAC Documentation](https://docs.intel.com)
+- [ITAC Provider Documentation](https://registry.terraform.io/providers/intel/intel-cloud/latest/docs)
+- [Terraform Documentation](https://www.terraform.io/docs/language/index.html)
+- [Terraform Provider Development](DEVELOPMENT.md)
+
+The provider lets you declaratively define the configuration for your Intel Cloud platform.
+
+
+## Contents
+
+- [ITAC Provider for Terraform](#Intel-provider-for-terraform)
+  - [Contents](#contents)
+  - [Requirements](#requirements)
+  - [Using the ITAC provider](#using-the-itac-provider)
+
+
 ## Requirements
 
-- [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.21
+-	[Terraform](https://www.terraform.io/downloads.html) 0.13 or higher
+-	[Go](https://golang.org/doc/install) v1.21 or higher (to build the provider plugin)
+- [Intel Cloud Platform](https://ai.cloud.intel.com/)
 
-## Building The Provider
+## Using the ITAC provider
 
-1. Clone the repository
-1. Enter the repository directory
-1. Build the provider using the Go `install` command:
+To quickly get started using the Intel provider for Terraform, configure the provider as shown below. Full provider documentation with details on all options available is located on the [Terraform Registry site](https://registry.terraform.io/providers/intel/intel-cloud/latest/docs).
 
-```shell
-go install
-```
-
-## Using the provider
-
-Currently, this plugin is not published to terraform registry and is available to be used in Local Dev mode locally. 
-
-## Trying out the ITAC Provider
-
-If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (see [Requirements](#requirements) above).
-
-To compile the provider, run `go install`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
-
-For local develoment, update the terraform config to point it to the local copy of the provider plugin.
-
-Edit `~/.terraformrc` file and add following config block
-
-```
-provider_installation {
-
-  dev_overrides {
-      "cloud.intel.com/services/itac" = "<$GOPATH>/bin"
+```hcl
+terraform {
+  required_providers {
+    intel-cloud = {
+      source = "intel/intel-cloud"
+      version = "0.0.2"
+    }
   }
-
-  # For all other providers, install them directly from their origin provider
-  # registries as normal. If you omit this, Terraform will _only_ use
-  # the dev_overrides block, and so no other providers will be available.
-  direct {}
 }
-```
 
-## ITAC Login Credentials
-For creating resources on ITAC, it requires auth credentials. More specifically, currently it requires following `three` environment variables to be configured.
-
-```
-export ITAC_CLOUDACCOUNT=<cloudaccount>
-export ITAC_CLIENT_ID=<Client ID >
-export ITAC_CLIENT_SECRET=<Client secret>
-```
-
-## Next Steps
-
-
+provider "intel-cloud" {
+  # Configuration options
+}
