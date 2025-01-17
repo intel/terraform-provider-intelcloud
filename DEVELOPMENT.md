@@ -1,4 +1,4 @@
-# ITAC Terraform Provider (Terraform Plugin Framework)
+# ITAC Terraform Provider
 
 This ITAC provider plugin brings the power of Hashicorp's Terraform to Intel Tiber AI Cloud (ITAC). It allows developers to model and manage their ITAC Resources through HCL IaaC (Infrastructure as a Code).
 
@@ -22,6 +22,15 @@ cd terraform-provider-intel-cloud
 3. Build the provider using the Go `install` command:
 ```shell
 go install
+```
+
+## ITAC Login Credentials
+For creating resources on ITAC, it requires auth credentials. More specifically, currently it requires following `three` environment variables to be configured.
+
+```
+export ITAC_CLOUDACCOUNT=<cloudaccount>
+export ITAC_CLIENT_ID=<Client ID >
+export ITAC_CLIENT_SECRET=<Client secret>
 ```
 
 
