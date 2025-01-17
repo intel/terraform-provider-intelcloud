@@ -207,13 +207,13 @@ func (p *idcProvider) Resources(_ context.Context) []func() resource.Resource {
 func discoverITACServiceEndpoint(region string) (string, string) {
 	switch region {
 	case "us-region-1":
-		return "https://client-token.api.idcservice.net/oauth2/token", "https://us-region-1-sdk-api.cloud.intel.com/v1"
+		return "https://client-token.api.idcservice.net", "https://us-region-1-sdk-api.cloud.intel.com/v1"
 	case "us-region-2":
-		return "https://client-token.api.idcservice.net/oauth2/token", "https://us-region-2-sdk-api.cloud.intel.com/v1"
+		return "https://client-token.api.idcservice.net", "https://us-region-2-sdk-api.cloud.intel.com/v1"
 	case "us-region-3":
-		return "https://client-token.api.idcservice.net/oauth2/token", "https://us-region-3-sdk-api.cloud.intel.com/v1"
+		return "https://client-token.api.idcservice.net", "https://us-region-3-sdk-api.cloud.intel.com/v1"
 	case "us-region-4":
-		return "https://client-token.api.idcservice.net/oauth2/token", "https://us-region-4-sdk-api.cloud.intel.com/v1"
+		return "https://client-token.api.idcservice.net", "https://us-region-4-sdk-api.cloud.intel.com/v1"
 	default:
 		return "", ""
 	}
