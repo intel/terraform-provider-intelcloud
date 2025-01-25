@@ -1,15 +1,15 @@
 terraform {
   required_providers {
-    intel-cloud = {
-      source = "intel/intel-cloud"
-      version = "0.0.1"
+    intelcloud = {
+      source = "intel/intelcloud"
+      version = "0.0.6"
     }
   }
 }
 
 
-provider "intel-cloud" {
-  region = "us-region-1"
+provider "intelcloud" {
+  region = "us-region-2"
 }
 
 resource "intelcloud_filesystem" "example" {
