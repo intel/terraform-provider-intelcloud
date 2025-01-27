@@ -1,18 +1,18 @@
 terraform {
   required_providers {
-    intel-cloud = {
-      source = "intel/intel-cloud"
-      version = "0.0.1"
+    intelcloud = {
+      source = "intel/intelcloud"
+      version = "0.0.6"
     }
   }
 }
 
 
-provider "intel-cloud" {
-  region = "us-region-1"
+provider "intelcloud" {
+  region = "us-region-2"
 }
 
-data "intel-cloud_machine_images" "image" {
+data "intelcloud_machine_images" "image" {
   most_recent = true
   filters = [
     {
@@ -22,15 +22,15 @@ data "intel-cloud_machine_images" "image" {
   ]
 }
 
-resource "intel-cloud_instance" "example" {
+resource "intelcloud_instance" "example" {
   name = "tf-demo-instance"
   spec = {
     instance_type        = "vm-spr-sml"
     machine_image        = data.intelcloud_machine_images.image.result.name
-    ssh_public_key_names = ["shrimac"]
+    ssh_public_key_names = ["test-key"]
   }
 }
 
 output "instance_order" {
-  value = intel-cloud_instance.example
+  value = intelcloud_instance.example
 }
