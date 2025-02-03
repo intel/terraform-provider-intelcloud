@@ -23,6 +23,8 @@ var (
 	createK8sNodeGroupURL = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/nodegroups"
 	getK8sNodeGroupURL    = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/nodegroups/{{.NodeGroupUUID}}"
 
+	getK8sKubeconfigURL = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/kubeconfig"
+
 	createK8sFileStorageURL = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/storage"
 	createIKSLBURL          = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/vips"
 	getIKSLBURLByCluster    = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/vips"
@@ -132,6 +134,10 @@ type IKSLoadBalancer struct {
 
 type IKSLBsByCluster struct {
 	Items []IKSLoadBalancer `json:"response"`
+}
+
+type KubeconfigResponse struct {
+	Config string `json:"kubeconfig"`
 }
 
 func (client *IDCServicesClient) GetKubernetesClusters(ctx context.Context) (*IKSClusters, *string, error) {
@@ -616,12 +622,44 @@ func (client *IDCServicesClient) DeleteIKSNodeGroup(ctx context.Context, cluster
 	if err != nil {
 		return fmt.Errorf("error deleting iks node group by resource id")
 	}
-
+	tflog.Debug(ctx, "iks node group delete api", map[string]any{"retcode": retcode})
 	if retcode != http.StatusOK {
 		return common.MapHttpError(retcode)
 	}
 
-	tflog.Debug(ctx, "iks node group delete api", map[string]any{"retcode": retcode})
-
 	return nil
+}
+
+func (client *IDCServicesClient) GetClusterKubeconfig(ctx context.Context, clusterId string) (*string, error) {
+	params := struct {
+		Host         string
+		Cloudaccount string
+		ClusterUUID  string
+	}{
+		Host:         *client.Host,
+		Cloudaccount: *client.Cloudaccount,
+		ClusterUUID:  clusterId,
+	}
+
+	// Parse the template string with the provided data
+	parsedURL, err := common.ParseString(getK8sKubeconfigURL, params)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing the url")
+	}
+
+	retcode, retval, err := common.MakeGetAPICall(ctx, parsedURL, *client.Apitoken, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error calling get kubeconfig api")
+	}
+	tflog.Debug(ctx, "iks get kubeconfig", map[string]any{"retcode": retcode})
+	if retcode != http.StatusOK {
+		return nil, common.MapHttpError(retcode)
+	}
+
+	resp := KubeconfigResponse{}
+	if err := json.Unmarshal(retval, &resp); err != nil {
+		return nil, fmt.Errorf("error parsing iks kubeconfig get response")
+	}
+
+	return &resp.Config, nil
 }

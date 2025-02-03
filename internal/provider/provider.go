@@ -181,12 +181,13 @@ func (p *idcProvider) Configure(ctx context.Context, req provider.ConfigureReque
 // DataSources defines the data sources implemented in the provider.
 func (p *idcProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewFilesystemsDataSource,
+		// NewFilesystemsDataSource,
 		NewSSHKeysDataSource,
-		NewInstanceDataSource,
+		// NewInstanceDataSource,
 		NewInstanceTypesDataSource,
 		NewMachineImagesDataSource,
-		NewKubernetesDataSource,
+		// NewKubernetesDataSource,
+		NewKubeconfigDataSource,
 	}
 }
 
@@ -206,6 +207,8 @@ func (p *idcProvider) Resources(_ context.Context) []func() resource.Resource {
 
 func discoverITACServiceEndpoint(region string) (string, string) {
 	switch region {
+	case "us-staging-1":
+		return "https://client-token.staging.api.idcservice.net", "https://us-staging-1-sdk-api.eglb.intel.com"
 	case "us-region-1":
 		return "https://client-token.api.idcservice.net", "https://us-region-1-sdk-api.cloud.intel.com"
 	case "us-region-2":
