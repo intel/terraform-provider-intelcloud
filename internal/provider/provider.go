@@ -181,12 +181,13 @@ func (p *idcProvider) Configure(ctx context.Context, req provider.ConfigureReque
 // DataSources defines the data sources implemented in the provider.
 func (p *idcProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewFilesystemsDataSource,
+		// NewFilesystemsDataSource,
 		NewSSHKeysDataSource,
-		NewInstanceDataSource,
+		// NewInstanceDataSource,
 		NewInstanceTypesDataSource,
 		NewMachineImagesDataSource,
-		NewKubernetesDataSource,
+		// NewKubernetesDataSource,
+		NewKubeconfigDataSource,
 	}
 }
 

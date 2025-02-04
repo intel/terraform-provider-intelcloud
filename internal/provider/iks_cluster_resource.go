@@ -101,9 +101,9 @@ func (r *iksClusterResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Computed: true,
 			},
 			"storage": schema.SingleNestedAttribute{
-				Required: true,
+				Optional: true,
 				Attributes: map[string]schema.Attribute{
-					"size_in_gb": schema.Int64Attribute{
+					"size_in_tb": schema.Int64Attribute{
 						Required: true,
 					},
 					"state": schema.StringAttribute{
@@ -175,10 +175,10 @@ func (r *iksClusterResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	if !plan.Storage.Size.IsNull() {
+	if plan.Storage != nil && !plan.Storage.Size.IsNull() {
 		inArg := itacservices.IKSStorageCreateRequest{
 			Enable: true,
-			Size:   fmt.Sprintf("%sGB", strconv.FormatInt(plan.Storage.Size.ValueInt64(), 10)),
+			Size:   fmt.Sprintf("%sTB", strconv.FormatInt(plan.Storage.Size.ValueInt64(), 10)),
 		}
 
 		storageResp, _, err := r.client.CreateIKSStorage(ctx, &inArg, plan.ID.ValueString())

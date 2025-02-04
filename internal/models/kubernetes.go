@@ -105,3 +105,7 @@ var IKSLoadLalancerAttributes = map[string]attr.Type{
 	"pool_port": types.Int64Type,
 	"vip_type":  types.StringType,
 }
+
+type KubeconfigModel struct {
+	Config types.String `tfsdk:"config"`
+}
