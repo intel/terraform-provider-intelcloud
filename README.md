@@ -6,7 +6,7 @@ Useful links:
 - [ITAC Documentation](https://staging.console.idcservice.net/docs/index.html)
 - [ITAC Provider Documentation](https://registry.terraform.io/providers/intel/intel-cloud/latest/docs)
 - [Terraform Documentation](https://www.terraform.io/docs/language/index.html)
-- [Terraform Provider Development](DEVELOPMENT.md)
+<!-- [Terraform Provider Development](DEVELOPMENT.md) -->
 
 The provider lets you declaratively define the configuration for your Intel Cloud platform.
 
@@ -24,6 +24,18 @@ The provider lets you declaratively define the configuration for your Intel Clou
 - [Intel Cloud Platform](https://ai.cloud.intel.com/)
 
 ### Using the ITAC provider
+
+#### ITAC Login Credentials
+For creating resources on ITAC, it requires auth credentials. More specifically, currently it requires following `three` environment variables to be configured.
+
+The values for these environment variables can be created by the user using creds as a service.
+
+```
+export ITAC_CLOUDACCOUNT=<cloudaccount>
+export ITAC_CLIENT_ID=<Client ID >
+export ITAC_CLIENT_SECRET=<Client secret>
+```
+
 
 To quickly get started using the Intel provider for Terraform, configure the provider as shown below. Full provider documentation with details on all options available is located on the [Terraform Registry site](https://registry.terraform.io/providers/intel/intel-cloud/latest/docs).
 
