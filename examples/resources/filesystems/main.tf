@@ -9,13 +9,13 @@ terraform {
 
 
 provider "intelcloud" {
-  region = "us-region-2"
+  region = "us-staging-1"
 }
 
 resource "intelcloud_filesystem" "example" {
   name = "tf-demo79"
   spec = {
-    size_in_tb = 1
+    size_in_tb = 2
   }
 }
 

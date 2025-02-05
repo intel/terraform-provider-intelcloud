@@ -113,3 +113,38 @@ func MakeDeleteAPICall(ctx context.Context, connURL string, auth string, payload
 	}
 	return retcode, body, nil
 }
+
+// MakePutAPICall :
+func MakePutAPICall(ctx context.Context, connURL, auth string, payload []byte) (int, []byte, error) {
+	// logger := log.FromContext(ctx).WithName("common.MakeGetAPICall")
+	// http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: false}
+	req, err := http.NewRequest("PUT", connURL, bytes.NewBuffer(payload))
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if auth != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", auth))
+	}
+	retries := 3
+	body := []byte{}
+	retcode := http.StatusOK
+	for try := 1; try <= retries; try++ {
+		client := &http.Client{Timeout: 60 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			if try == retries {
+				return http.StatusInternalServerError, nil,
+					errors.New("error conencting to  api service")
+			}
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		defer resp.Body.Close()
+		body, _ = io.ReadAll(resp.Body)
+		retcode = resp.StatusCode
+		break
+	}
+	// body = []byte(sampleFilesystemList)
+	return retcode, body, nil
+}

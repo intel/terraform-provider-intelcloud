@@ -16,6 +16,7 @@ import (
 var (
 	getAllFilesystemsURL         = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/filesystems?metadata.filterType=ComputeGeneral"
 	createFilesystemsURL         = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/filesystems"
+	updateFilesystemByName       = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/filesystems/name/{{.Name}}"
 	getFilesystemByResourceId    = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/filesystems/id/{{.ResourceId}}"
 	deleteFilesystemByResourceId = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/filesystems/id/{{.ResourceId}}"
 	getLoginCredentials          = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/filesystems/id/{{.ResourceId}}/user"
@@ -63,8 +64,7 @@ type LoginCreds struct {
 
 type FilesystemCreateRequest struct {
 	Metadata struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
+		Name string `json:"name"`
 	} `json:"metadata"`
 	Spec struct {
 		Request struct {
@@ -77,6 +77,17 @@ type FilesystemCreateRequest struct {
 		Encrypted        bool   `json:"Encrypted"`
 		AvailabilityZone string `json:"availabilityZone"`
 	} `json:"spec"`
+}
+
+type FilesystemUpdateRequest struct {
+	Metadata struct {
+		Name string `json:"name"`
+	} `json:"metadata"`
+	Spec struct {
+		Request struct {
+			Size string `json:"storage"`
+		} `json:"request"`
+	}
 }
 
 func (client *IDCServicesClient) GetFilesystems(ctx context.Context) (*Filesystems, error) {
@@ -210,11 +221,15 @@ func (client *IDCServicesClient) CreateFilesystem(ctx context.Context, in *Files
 		return nil, fmt.Errorf("filesystem state not ready after maximum retries")
 	}
 
-	password, err := client.GenerateFilesystemLoginCredentials(ctx, filesystem.Metadata.ResourceId)
-	if err != nil {
-		return nil, fmt.Errorf("error generating login credentials")
-	}
-	filesystem.Status.Mount.Password = *password
+	// tflog.Debug(ctx, "filesystem generate passwordi", map[string]any{"resource": filesystem.Metadata.ResourceId})
+
+	// password, err := client.GenerateFilesystemLoginCredentials(ctx, filesystem.Metadata.ResourceId)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("error generating login credentials")
+	// }
+	// filesystem.Status.Mount.Password = *password
+
+	tflog.Debug(ctx, "filesystem generate passwordi", map[string]any{"password": filesystem.Status.Mount.Password})
 
 	return filesystem, nil
 }
@@ -281,7 +296,38 @@ func (client *IDCServicesClient) DeleteFilesystemByResourceId(ctx context.Contex
 		return common.MapHttpError(retcode)
 	}
 
-	tflog.Debug(ctx, "filesystem delete api", map[string]any{"retcode": retcode})
+	return nil
+}
+
+func (client *IDCServicesClient) UpdateFilesystem(ctx context.Context, in *FilesystemUpdateRequest) error {
+	params := struct {
+		Host         string
+		Cloudaccount string
+		Name         string
+	}{
+		Host:         *client.Host,
+		Cloudaccount: *client.Cloudaccount,
+		Name:         in.Metadata.Name,
+	}
+
+	// Parse the template string with the provided data
+	parsedURL, err := common.ParseString(updateFilesystemByName, params)
+	if err != nil {
+		return fmt.Errorf("error parsing the url")
+	}
+
+	tflog.Debug(ctx, "filesystem update api", map[string]any{"url": parsedURL})
+
+	retcode, retval, err := common.MakePutAPICall(ctx, parsedURL, *client.Apitoken, nil)
+	if err != nil {
+		return fmt.Errorf("error updating filesystem by name")
+	}
+
+	tflog.Debug(ctx, "filesystem update api", map[string]any{"retcode": retcode, "retval": string(retval)})
+
+	if retcode != http.StatusOK {
+		return common.MapHttpError(retcode)
+	}
 
 	return nil
 }

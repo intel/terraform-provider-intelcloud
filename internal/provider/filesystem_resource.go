@@ -10,6 +10,7 @@ import (
 	"terraform-provider-intelcloud/pkg/itacservices"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -31,7 +32,6 @@ type filesystemResourceModel struct {
 	ID               types.String           `tfsdk:"id"`
 	Cloudaccount     types.String           `tfsdk:"cloudaccount"`
 	Name             types.String           `tfsdk:"name"`
-	Description      types.String           `tfsdk:"description"`
 	AvailabilityZone types.String           `tfsdk:"availability_zone"`
 	Spec             *models.FilesystemSpec `tfsdk:"spec"`
 	Status           types.String           `tfsdk:"status"`
@@ -87,9 +87,6 @@ func (r *filesystemResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			"cloudaccount": schema.StringAttribute{
 				Computed: true,
 			},
-			"description": schema.StringAttribute{
-				Optional: true,
-			},
 			"availability_zone": schema.StringAttribute{
 				Computed: true,
 			},
@@ -130,6 +127,7 @@ func (r *filesystemResource) Schema(_ context.Context, _ resource.SchemaRequest,
 					"password":        types.StringType,
 				},
 				Computed: true,
+				Optional: true,
 			},
 			"status": schema.StringAttribute{
 				Computed: true,
@@ -152,11 +150,9 @@ func (r *filesystemResource) Create(ctx context.Context, req resource.CreateRequ
 
 	inArg := itacservices.FilesystemCreateRequest{
 		Metadata: struct {
-			Name        string "json:\"name\""
-			Description string "json:\"description\""
+			Name string "json:\"name\""
 		}{
-			Name:        plan.Name.ValueString(),
-			Description: plan.Description.ValueString(),
+			Name: plan.Name.ValueString(),
 		},
 		Spec: struct {
 			Request struct {
@@ -198,6 +194,8 @@ func (r *filesystemResource) Create(ctx context.Context, req resource.CreateRequ
 	plan.ID = types.StringValue(fsResp.Metadata.ResourceId)
 	plan.Status = types.StringValue(mapFilesystemStatus(fsResp.Status.Phase))
 
+	plan.Spec.FilesystemType = types.StringValue(fsResp.Spec.FilesystemType)
+	plan.Spec.StorageClass = types.StringValue(fsResp.Spec.StorageClass)
 	clusterInfoMap := models.FilesystemClusteModel{
 		ClusterAddress: types.StringValue(fsResp.Status.Mount.ClusterAddr),
 		ClusterVersion: types.StringValue(fsResp.Status.Mount.ClusterVersion),
@@ -250,44 +248,12 @@ func (r *filesystemResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	state := &filesystemResourceModel{}
-	sizeStr := strings.Split(filesystem.Spec.Request.Size, "GB")[0]
-	size, _ := strconv.ParseInt(sizeStr, 10, 64)
-
-	state.ID = types.StringValue(filesystem.Metadata.ResourceId)
-	state.Cloudaccount = types.StringValue(filesystem.Metadata.Cloudaccount)
-	state.Name = types.StringValue(filesystem.Metadata.Name)
-	state.Description = types.StringValue(filesystem.Metadata.Description)
-	state.AvailabilityZone = types.StringValue(filesystem.Spec.AvailabilityZone)
-	state.Spec = &models.FilesystemSpec{
-		Size:       types.Int64Value(size),
-		AccessMode: types.StringValue(filesystem.Spec.AccessMode),
-		Encrypted:  types.BoolValue(filesystem.Spec.Encrypted),
-	}
-
-	state.Status = types.StringValue(mapFilesystemStatus(filesystem.Status.Phase))
-
-	clusterInfoMap := models.FilesystemClusteModel{
-		ClusterAddress: types.StringValue(filesystem.Status.Mount.ClusterAddr),
-		ClusterVersion: types.StringValue(filesystem.Status.Mount.ClusterVersion),
-	}
-
-	accessInfoMap := models.FilesystemAccessModel{
-		Namespace:  types.StringValue(filesystem.Status.Mount.Namespace),
-		Filesystem: types.StringValue(filesystem.Status.Mount.FilesystemName),
-		Username:   types.StringValue(filesystem.Status.Mount.UserName),
-		Password:   types.StringValue(filesystem.Status.Mount.Password),
-	}
-
-	state.ClusterInfo, diags = types.ObjectValueFrom(ctx, clusterInfoMap.AttributeTypes(), clusterInfoMap)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	state.AccessInfo, diags = types.ObjectValueFrom(ctx, accessInfoMap.AttributeTypes(), accessInfoMap)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	state, err := refreshFilesystemResourceModel(ctx, filesystem)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading IDC Filesystem resource",
+			"Could not read IDC Filesystem resource ID "+orig.ID.ValueString()+": "+err.Error(),
+		)
 		return
 	}
 
@@ -301,6 +267,82 @@ func (r *filesystemResource) Read(ctx context.Context, req resource.ReadRequest,
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *filesystemResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan, state filesystemResourceModel
+
+	// Retrieve the desired configuration from the plan
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Retrieve the current state
+	diags = req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Detect changes in the "spec" field
+	if !plan.Spec.Size.Equal(state.Spec.Size) {
+		tflog.Info(ctx, "Detected change in filesystem spec, updating resource")
+	}
+
+	inArg := itacservices.FilesystemUpdateRequest{
+		Metadata: struct {
+			Name string "json:\"name\""
+		}{
+			Name: plan.Name.ValueString(),
+		},
+		Spec: struct {
+			Request struct {
+				Size string "json:\"storage\""
+			} "json:\"request\""
+		}{
+			Request: struct {
+				Size string "json:\"storage\""
+			}{
+				Size: fmt.Sprintf("%dTB", plan.Spec.Size.ValueInt64()),
+			},
+		},
+	}
+
+	tflog.Info(ctx, "making a call to IDC Service for update filesystem")
+	err := r.client.UpdateFilesystem(ctx, &inArg)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating order",
+			"Could not create order, unexpected error: "+err.Error(),
+		)
+		return
+	}
+
+	// Get refreshed order value from IDC Service
+	filesystem, err := r.client.GetFilesystemByResourceId(ctx, state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading IDC Filesystem resource",
+			"Could not read IDC Filesystem resource ID "+state.ID.ValueString()+": "+err.Error(),
+		)
+		return
+	}
+
+	currState, err := refreshFilesystemResourceModel(ctx, filesystem)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading IDC Filesystem resource",
+			"Could not read IDC Filesystem resource ID "+plan.ID.ValueString()+": "+err.Error(),
+		)
+		return
+	}
+	currState.Spec.Size = plan.Spec.Size
+	// Set refreshed state
+	diags = resp.State.Set(ctx, currState)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 }
 
 func (r *filesystemResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -344,4 +386,50 @@ func mapFilesystemStatus(fsStatus string) string {
 	default:
 		return "unspecified"
 	}
+}
+
+func refreshFilesystemResourceModel(ctx context.Context, filesystem *itacservices.Filesystem) (*filesystemResourceModel, error) {
+
+	state := &filesystemResourceModel{}
+	sizeStr := strings.Split(filesystem.Spec.Request.Size, "TB")[0]
+	size, _ := strconv.ParseInt(sizeStr, 10, 64)
+
+	state.ID = types.StringValue(filesystem.Metadata.ResourceId)
+	state.Cloudaccount = types.StringValue(filesystem.Metadata.Cloudaccount)
+	state.Name = types.StringValue(filesystem.Metadata.Name)
+
+	state.AvailabilityZone = types.StringValue(filesystem.Spec.AvailabilityZone)
+	state.Spec = &models.FilesystemSpec{
+		Size:           types.Int64Value(size),
+		AccessMode:     types.StringValue(filesystem.Spec.AccessMode),
+		Encrypted:      types.BoolValue(filesystem.Spec.Encrypted),
+		FilesystemType: types.StringValue(filesystem.Spec.FilesystemType),
+		StorageClass:   types.StringValue(filesystem.Spec.StorageClass),
+	}
+
+	state.Status = types.StringValue(mapFilesystemStatus(filesystem.Status.Phase))
+
+	clusterInfoMap := models.FilesystemClusteModel{
+		ClusterAddress: types.StringValue(filesystem.Status.Mount.ClusterAddr),
+		ClusterVersion: types.StringValue(filesystem.Status.Mount.ClusterVersion),
+	}
+
+	accessInfoMap := models.FilesystemAccessModel{
+		Namespace:  types.StringValue(filesystem.Status.Mount.Namespace),
+		Filesystem: types.StringValue(filesystem.Status.Mount.FilesystemName),
+		Username:   types.StringValue(filesystem.Status.Mount.UserName),
+		Password:   types.StringValue(filesystem.Status.Mount.Password),
+	}
+
+	diags := diag.Diagnostics{}
+	state.ClusterInfo, diags = types.ObjectValueFrom(ctx, clusterInfoMap.AttributeTypes(), clusterInfoMap)
+	if diags.HasError() {
+		return state, fmt.Errorf("error parsing values")
+	}
+
+	state.AccessInfo, diags = types.ObjectValueFrom(ctx, accessInfoMap.AttributeTypes(), accessInfoMap)
+	if diags.HasError() {
+		return state, fmt.Errorf("error parsing values")
+	}
+	return state, nil
 }
