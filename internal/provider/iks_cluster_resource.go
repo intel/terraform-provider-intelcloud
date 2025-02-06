@@ -8,9 +8,11 @@ import (
 	"terraform-provider-intelcloud/pkg/itacservices"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -150,10 +152,7 @@ func (r *iksClusterResource) Create(ctx context.Context, req resource.CreateRequ
 		)
 		return
 	}
-	// iksClusterResp := idcservices.IKSCluster{
-	// 	ResourceId: "cl-lc2ze6pu4i",
-	// }
-	// var cloudaccount *string
+
 	// Map response body to schema and populate Computed attribute values
 	plan.ID = types.StringValue(iksClusterResp.ResourceId)
 	plan.ClusterStatus = types.StringValue(iksClusterResp.ClusterState)
@@ -301,6 +300,66 @@ func (r *iksClusterResource) Read(ctx context.Context, req resource.ReadRequest,
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *iksClusterResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan, state iksClusterResourceModel
+
+	// Retrieve the desired configuration from the plan
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Retrieve the current state
+	diags = req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if !plan.K8sversion.Equal(state.K8sversion) {
+		tflog.Info(ctx, "Detected change in iks cluster spec for k8s version, updating cluster",
+			map[string]any{"current version ": state.K8sversion, "new version": plan.K8sversion})
+
+		inArg := itacservices.UpgradeClusterRequest{
+			ClusterId:  plan.ID.String(),
+			K8sVersion: plan.K8sversion.String(),
+		}
+		err := r.client.UpgradeCluster(ctx, &inArg)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error creating order",
+				"Could not create order, unexpected error: "+err.Error(),
+			)
+			return
+		}
+
+		// Get refreshed order value from IDC Service
+		cluster, cloudaccount, err := r.client.GetIKSClusterByClusterUUID(ctx, state.ID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error Reading IKS Cluster resource",
+				"Could not read IKS Cluster resource ID "+state.ID.ValueString()+": "+err.Error(),
+			)
+			return
+		}
+
+		currState, err := refreshIKSCLusterResourceModel(ctx, cluster, cloudaccount)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error Reading IKS cluster resource",
+				"Could not read IKS cluster resource ID "+plan.ID.ValueString()+": "+err.Error(),
+			)
+			return
+		}
+
+		// Set refreshed state
+		diags = resp.State.Set(ctx, currState)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+	tflog.Info(ctx, "no change detected change in cluster spec, skipping update")
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
@@ -322,4 +381,30 @@ func (r *iksClusterResource) Delete(ctx context.Context, req resource.DeleteRequ
 		)
 		return
 	}
+}
+
+func refreshIKSCLusterResourceModel(ctx context.Context, cluster *itacservices.IKSCluster, cloudaccount *string) (*iksClusterResourceModel, error) {
+	state := &iksClusterResourceModel{}
+	diags := diag.Diagnostics{}
+
+	state.ID = types.StringValue(cluster.ResourceId)
+	state.ClusterStatus = types.StringValue(cluster.ClusterState)
+	if cloudaccount != nil {
+		state.Cloudaccount = types.StringValue(*cloudaccount)
+	} else {
+		state.Cloudaccount = types.StringNull()
+	}
+
+	network := models.ClusterNetwork{
+		ClusterCIDR: types.StringValue(cluster.Network.ClusterCIDR),
+		ClusterDNS:  types.StringValue(cluster.Network.ClusterDNS),
+		EnableLB:    types.BoolValue(cluster.Network.EnableLB),
+		ServiceCIDR: types.StringValue(cluster.Network.ServcieCIDR),
+	}
+	state.Network, diags = types.ObjectValueFrom(ctx, network.AttributeTypes(), network)
+	if diags.HasError() {
+		return state, fmt.Errorf("error parsing values")
+	}
+
+	return state, nil
 }

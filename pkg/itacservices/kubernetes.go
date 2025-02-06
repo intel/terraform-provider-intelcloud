@@ -23,7 +23,8 @@ var (
 	createK8sNodeGroupURL = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/nodegroups"
 	getK8sNodeGroupURL    = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/nodegroups/{{.NodeGroupUUID}}"
 
-	getK8sKubeconfigURL = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/kubeconfig"
+	getK8sKubeconfigURL  = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/kubeconfig"
+	upgradeK8sClusterURL = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/upgrade"
 
 	createK8sFileStorageURL = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/storage"
 	createIKSLBURL          = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/vips"
@@ -138,6 +139,11 @@ type IKSLBsByCluster struct {
 
 type KubeconfigResponse struct {
 	Config string `json:"kubeconfig"`
+}
+
+type UpgradeClusterRequest struct {
+	ClusterId  string `json:"clusteruuid"`
+	K8sVersion string `json:"k8sversionname"`
 }
 
 func (client *IDCServicesClient) GetKubernetesClusters(ctx context.Context) (*IKSClusters, *string, error) {
@@ -662,4 +668,38 @@ func (client *IDCServicesClient) GetClusterKubeconfig(ctx context.Context, clust
 	}
 
 	return &resp.Config, nil
+}
+
+func (client *IDCServicesClient) UpgradeCluster(ctx context.Context, in *UpgradeClusterRequest) error {
+	params := struct {
+		Host         string
+		Cloudaccount string
+		ClusterUUID  string
+	}{
+		Host:         *client.Host,
+		Cloudaccount: *client.Cloudaccount,
+		ClusterUUID:  in.ClusterId,
+	}
+
+	// Parse the template string with the provided data
+	parsedURL, err := common.ParseString(upgradeK8sClusterURL, params)
+	if err != nil {
+		return fmt.Errorf("error parsing the url")
+	}
+
+	inArgs, err := json.MarshalIndent(in, "", "    ")
+	if err != nil {
+		return fmt.Errorf("error parsing input arguments")
+	}
+
+	retcode, retval, err := common.MakePOSTAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
+	if err != nil {
+		return fmt.Errorf("error calling upgrade cluster api")
+	}
+	tflog.Debug(ctx, "iks upgrade cluster", map[string]any{"retcode": retcode, "retval": retval})
+	if retcode != http.StatusOK {
+		return common.MapHttpError(retcode)
+	}
+
+	return nil
 }

@@ -286,63 +286,63 @@ func (r *filesystemResource) Update(ctx context.Context, req resource.UpdateRequ
 	// Detect changes in the "spec" field
 	if !plan.Spec.Size.Equal(state.Spec.Size) {
 		tflog.Info(ctx, "Detected change in filesystem spec, updating resource")
-	}
 
-	inArg := itacservices.FilesystemUpdateRequest{
-		Metadata: struct {
-			Name string "json:\"name\""
-		}{
-			Name: plan.Name.ValueString(),
-		},
-		Spec: struct {
-			Request struct {
-				Size string "json:\"storage\""
-			} "json:\"request\""
-		}{
-			Request: struct {
-				Size string "json:\"storage\""
+		inArg := itacservices.FilesystemUpdateRequest{
+			Metadata: struct {
+				Name string "json:\"name\""
 			}{
-				Size: fmt.Sprintf("%dTB", plan.Spec.Size.ValueInt64()),
+				Name: plan.Name.ValueString(),
 			},
-		},
-	}
+			Spec: struct {
+				Request struct {
+					Size string "json:\"storage\""
+				} "json:\"request\""
+			}{
+				Request: struct {
+					Size string "json:\"storage\""
+				}{
+					Size: fmt.Sprintf("%dTB", plan.Spec.Size.ValueInt64()),
+				},
+			},
+		}
 
-	tflog.Info(ctx, "making a call to IDC Service for update filesystem")
-	err := r.client.UpdateFilesystem(ctx, &inArg)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating order",
-			"Could not create order, unexpected error: "+err.Error(),
-		)
-		return
-	}
+		tflog.Info(ctx, "making a call to IDC Service for update filesystem")
+		err := r.client.UpdateFilesystem(ctx, &inArg)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error creating order",
+				"Could not create order, unexpected error: "+err.Error(),
+			)
+			return
+		}
 
-	// Get refreshed order value from IDC Service
-	filesystem, err := r.client.GetFilesystemByResourceId(ctx, state.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading IDC Filesystem resource",
-			"Could not read IDC Filesystem resource ID "+state.ID.ValueString()+": "+err.Error(),
-		)
-		return
-	}
+		// Get refreshed order value from IDC Service
+		filesystem, err := r.client.GetFilesystemByResourceId(ctx, state.ID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error Reading IDC Filesystem resource",
+				"Could not read IDC Filesystem resource ID "+state.ID.ValueString()+": "+err.Error(),
+			)
+			return
+		}
 
-	currState, err := refreshFilesystemResourceModel(ctx, filesystem)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading IDC Filesystem resource",
-			"Could not read IDC Filesystem resource ID "+plan.ID.ValueString()+": "+err.Error(),
-		)
-		return
+		currState, err := refreshFilesystemResourceModel(ctx, filesystem)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error Reading IDC Filesystem resource",
+				"Could not read IDC Filesystem resource ID "+plan.ID.ValueString()+": "+err.Error(),
+			)
+			return
+		}
+		currState.Spec.Size = plan.Spec.Size
+		// Set refreshed state
+		diags = resp.State.Set(ctx, currState)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
-	currState.Spec.Size = plan.Spec.Size
-	// Set refreshed state
-	diags = resp.State.Set(ctx, currState)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
+	tflog.Info(ctx, "no change detected change in filesystem spec, skipping update")
 }
 
 func (r *filesystemResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
@@ -391,6 +391,8 @@ func mapFilesystemStatus(fsStatus string) string {
 func refreshFilesystemResourceModel(ctx context.Context, filesystem *itacservices.Filesystem) (*filesystemResourceModel, error) {
 
 	state := &filesystemResourceModel{}
+	diags := diag.Diagnostics{}
+
 	sizeStr := strings.Split(filesystem.Spec.Request.Size, "TB")[0]
 	size, _ := strconv.ParseInt(sizeStr, 10, 64)
 
@@ -421,7 +423,6 @@ func refreshFilesystemResourceModel(ctx context.Context, filesystem *itacservice
 		Password:   types.StringValue(filesystem.Status.Mount.Password),
 	}
 
-	diags := diag.Diagnostics{}
 	state.ClusterInfo, diags = types.ObjectValueFrom(ctx, clusterInfoMap.AttributeTypes(), clusterInfoMap)
 	if diags.HasError() {
 		return state, fmt.Errorf("error parsing values")
