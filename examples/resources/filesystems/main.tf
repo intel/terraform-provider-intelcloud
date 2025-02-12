@@ -2,20 +2,20 @@ terraform {
   required_providers {
     intelcloud = {
       source = "intel/intelcloud"
-      version = "0.0.6"
+      version = "0.0.7"
     }
   }
 }
 
 
 provider "intelcloud" {
-  region = "us-staging-1"
+  region = "us-region-2"
 }
 
 resource "intelcloud_filesystem" "example" {
   name = "tf-demo79"
   spec = {
-    size_in_tb = 2
+    size_in_tb = 3
   }
 }
 

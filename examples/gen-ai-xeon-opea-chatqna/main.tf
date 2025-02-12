@@ -1,14 +1,14 @@
 terraform {
   required_providers {
-    intel-cloud = {
-      source = "intel/intel-cloud"
-      version = "0.0.1"
+    intelcloud = {
+      source = "intel/intelcloud"
+      version = "0.0.7"
     }
   }
 }
 
 
-provider "intel-cloud" {
+provider "intelcloud" {
   region = "us-region-1"
 }
 
@@ -28,7 +28,7 @@ provider "intel-cloud" {
 #   }
 # }
 
-# resource "idc_sshkey" "example" {
+# resource "intelcloud_sshkey" "example" {
 #    metadata = {
 #       name = var.ssh_key_name
 #     }
@@ -38,7 +38,7 @@ provider "intel-cloud" {
 #     }
 # }
 
-resource "idc_instance" "example" {
+resource "intelcloud_instance" "example" {
   name = var.instance_name
   spec = {
     instance_type        = var.instance_types[var.instance_type]
@@ -46,9 +46,9 @@ resource "idc_instance" "example" {
     ssh_public_key_names = [var.ssh_key_name]
     user_data            = file("./cloud_init.yaml")
   }
-  # depends_on = [idc_sshkey.example]
+  # depends_on = [intelcloud_sshkey.example]
 }
 
 output "instance_order" {
-  value = idc_instance.example
+  value = intelcloud_instance.example
 }
