@@ -293,20 +293,22 @@ func (r *filesystemResource) Update(ctx context.Context, req resource.UpdateRequ
 			}{
 				Name: plan.Name.ValueString(),
 			},
-			Spec: struct {
-				Request struct {
-					Size string "json:\"storage\""
-				} "json:\"request\""
-			}{
-				Request: struct {
-					Size string "json:\"storage\""
+			Payload: itacservices.FileSystemUpdatePayload{
+				Spec: struct {
+					Request struct {
+						Size string "json:\"storage\""
+					} "json:\"request\""
 				}{
-					Size: fmt.Sprintf("%dTB", plan.Spec.Size.ValueInt64()),
+					Request: struct {
+						Size string "json:\"storage\""
+					}{
+						Size: fmt.Sprintf("%dTB", plan.Spec.Size.ValueInt64()),
+					},
 				},
 			},
 		}
 
-		tflog.Info(ctx, "making a call to IDC Service for update filesystem")
+		tflog.Info(ctx, "making a call to IDC Service for update filesystem", map[string]any{"Payload": inArg})
 		err := r.client.UpdateFilesystem(ctx, &inArg)
 		if err != nil {
 			resp.Diagnostics.AddError(
