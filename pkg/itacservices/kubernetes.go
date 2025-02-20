@@ -146,6 +146,10 @@ type UpgradeClusterRequest struct {
 	K8sVersion string `json:"k8sversionname"`
 }
 
+type UpgradeClusterPayload struct {
+	K8sVersion string `json:"k8sversionname"`
+}
+
 func (client *IDCServicesClient) GetKubernetesClusters(ctx context.Context) (*IKSClusters, *string, error) {
 	params := struct {
 		Host         string
@@ -266,7 +270,7 @@ func (client *IDCServicesClient) GetIKSClusterByClusterUUID(ctx context.Context,
 	if err != nil {
 		return nil, nil, fmt.Errorf("error reading sshkey by resource id")
 	}
-	tflog.Debug(ctx, "iks create api response", map[string]any{"retcode": retcode, "retval": string(retval)})
+	tflog.Debug(ctx, "iks get cluster by UUID api response", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
 		return nil, nil, common.MapHttpError(retcode)
@@ -681,13 +685,16 @@ func (client *IDCServicesClient) UpgradeCluster(ctx context.Context, in *Upgrade
 		ClusterUUID:  in.ClusterId,
 	}
 
+	inArg := UpgradeClusterPayload{
+		K8sVersion: in.K8sVersion,
+	}
 	// Parse the template string with the provided data
 	parsedURL, err := common.ParseString(upgradeK8sClusterURL, params)
 	if err != nil {
 		return fmt.Errorf("error parsing the url")
 	}
 
-	inArgs, err := json.MarshalIndent(in, "", "    ")
+	inArgs, err := json.MarshalIndent(inArg, "", "    ")
 	if err != nil {
 		return fmt.Errorf("error parsing input arguments")
 	}
