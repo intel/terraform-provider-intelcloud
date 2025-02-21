@@ -26,7 +26,6 @@ type iksClusterResourceModel struct {
 	ID               types.String `tfsdk:"id"`
 	Cloudaccount     types.String `tfsdk:"cloudaccount"`
 	Name             types.String `tfsdk:"name"`
-	AvailabilityZone types.String `tfsdk:"availability_zone"`
 	K8sversion       types.String `tfsdk:"kubernetes_version"`
 	ClusterStatus    types.String `tfsdk:"cluster_status"`
 	Network          types.Object `tfsdk:"network"`
@@ -83,9 +82,6 @@ func (r *iksClusterResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			},
 			"cloudaccount": schema.StringAttribute{
 				Computed: true,
-			},
-			"availability_zone": schema.StringAttribute{
-				Optional: true,
 			},
 			"kubernetes_version": schema.StringAttribute{
 				Required: true,
@@ -214,6 +210,7 @@ func (r *iksClusterResource) Create(ctx context.Context, req resource.CreateRequ
 
 // Read refreshes the Terraform state with the latest data.
 func (r *iksClusterResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+
 	// Get current state
 	var state iksClusterResourceModel
 	diags := req.State.Get(ctx, &state)
@@ -234,6 +231,7 @@ func (r *iksClusterResource) Read(ctx context.Context, req resource.ReadRequest,
 	// Map response body to schema and populate Computed attribute values
 	state.ID = types.StringValue(iksClusterResp.ResourceId)
 	state.ClusterStatus = types.StringValue(iksClusterResp.ClusterState)
+	state.K8sversion = types.StringValue(iksClusterResp.K8sVersion)
 	if cloudaccount != nil {
 		state.Cloudaccount = types.StringValue(*cloudaccount)
 	} else {
@@ -318,11 +316,11 @@ func (r *iksClusterResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	if !plan.K8sversion.Equal(state.K8sversion) {
 		tflog.Info(ctx, "Detected change in iks cluster spec for k8s version, updating cluster",
-			map[string]any{"current version ": state.K8sversion, "new version": plan.K8sversion})
+			map[string]any{"current version ": state.K8sversion.ValueString(), "new version": plan.K8sversion.ValueString()})
 
 		inArg := itacservices.UpgradeClusterRequest{
-			ClusterId:  plan.ID.String(),
-			K8sVersion: plan.K8sversion.String(),
+			ClusterId:  state.ID.ValueString(),
+			K8sVersion: plan.K8sversion.ValueString(),
 		}
 		err := r.client.UpgradeCluster(ctx, &inArg)
 		if err != nil {
@@ -332,32 +330,46 @@ func (r *iksClusterResource) Update(ctx context.Context, req resource.UpdateRequ
 			)
 			return
 		}
+	}
+	// Get refreshed order value from IDC Service irrespective of whether upgrade was done or skipped
+	cluster, cloudaccount, err := r.client.GetIKSClusterByClusterUUID(ctx, state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading IKS Cluster resource",
+			"Could not read IKS Cluster resource ID "+state.ID.ValueString()+": "+err.Error(),
+		)
+		return
+	}
 
-		// Get refreshed order value from IDC Service
-		cluster, cloudaccount, err := r.client.GetIKSClusterByClusterUUID(ctx, state.ID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error Reading IKS Cluster resource",
-				"Could not read IKS Cluster resource ID "+state.ID.ValueString()+": "+err.Error(),
-			)
-			return
-		}
+	currState, err := refreshIKSCLusterResourceModel(ctx, cluster, cloudaccount)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading IKS cluster resource",
+			"Could not read IKS cluster resource ID "+plan.ID.ValueString()+": "+err.Error(),
+		)
+		return
+	}
 
-		currState, err := refreshIKSCLusterResourceModel(ctx, cluster, cloudaccount)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error Reading IKS cluster resource",
-				"Could not read IKS cluster resource ID "+plan.ID.ValueString()+": "+err.Error(),
-			)
-			return
-		}
+	// Set refreshed state
+	diags = resp.State.Set(ctx, currState)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	currState, err = refreshIKSCLusterResourceModel(ctx, cluster, cloudaccount)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading IKS cluster resource",
+			"Could not read IKS cluster resource ID "+plan.ID.ValueString()+": "+err.Error(),
+		)
+		return
+	}
 
-		// Set refreshed state
-		diags = resp.State.Set(ctx, currState)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+	// Set refreshed state
+	diags = resp.State.Set(ctx, currState)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 	tflog.Info(ctx, "no change detected change in cluster spec, skipping update")
 }
@@ -388,6 +400,8 @@ func refreshIKSCLusterResourceModel(ctx context.Context, cluster *itacservices.I
 	diags := diag.Diagnostics{}
 
 	state.ID = types.StringValue(cluster.ResourceId)
+	state.K8sversion = types.StringValue(cluster.K8sVersion)
+	state.Name = types.StringValue(cluster.Name)
 	state.ClusterStatus = types.StringValue(cluster.ClusterState)
 	if cloudaccount != nil {
 		state.Cloudaccount = types.StringValue(*cloudaccount)

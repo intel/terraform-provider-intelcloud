@@ -79,15 +79,19 @@ type FilesystemCreateRequest struct {
 	} `json:"spec"`
 }
 
-type FilesystemUpdateRequest struct {
-	Metadata struct {
-		Name string `json:"name"`
-	} `json:"metadata"`
+type FileSystemUpdatePayload struct {
 	Spec struct {
 		Request struct {
 			Size string `json:"storage"`
 		} `json:"request"`
-	}
+	} `json:"spec"`
+}
+
+type FilesystemUpdateRequest struct {
+	Metadata struct {
+		Name string `json:"name"`
+	} `json:"metadata"`
+	Payload FileSystemUpdatePayload
 }
 
 func (client *IDCServicesClient) GetFilesystems(ctx context.Context) (*Filesystems, error) {
@@ -304,10 +308,12 @@ func (client *IDCServicesClient) UpdateFilesystem(ctx context.Context, in *Files
 		Host         string
 		Cloudaccount string
 		Name         string
+		Payload      FileSystemUpdatePayload
 	}{
 		Host:         *client.Host,
 		Cloudaccount: *client.Cloudaccount,
 		Name:         in.Metadata.Name,
+		Payload:      in.Payload,
 	}
 
 	// Parse the template string with the provided data
@@ -316,14 +322,21 @@ func (client *IDCServicesClient) UpdateFilesystem(ctx context.Context, in *Files
 		return fmt.Errorf("error parsing the url")
 	}
 
-	tflog.Debug(ctx, "filesystem update api", map[string]any{"url": parsedURL})
+	//tflog.Debug(ctx, "filesystem update api", map[string]any{"url": parsedURL, "payload": params.Payload})
 
-	retcode, retval, err := common.MakePutAPICall(ctx, parsedURL, *client.Apitoken, nil)
+	// Convert the struct to JSON []byte
+	paramsByte, err := json.Marshal(params.Payload)
+	if err != nil {
+		return fmt.Errorf("error converting payload %v to JSON: %v", params.Payload, err)
+	}
+	tflog.Debug(ctx, "filesystem update api", map[string]any{"url": parsedURL, "payload byte": paramsByte})
+
+	retcode, retval, err := common.MakePutAPICall(ctx, parsedURL, *client.Apitoken, paramsByte)
 	if err != nil {
 		return fmt.Errorf("error updating filesystem by name")
 	}
 
-	tflog.Debug(ctx, "filesystem update api", map[string]any{"retcode": retcode, "retval": string(retval)})
+	tflog.Debug(ctx, "filesystem update api", map[string]any{"retcode": retcode, "retval": string(retval), "error": err})
 
 	if retcode != http.StatusOK {
 		return common.MapHttpError(retcode)

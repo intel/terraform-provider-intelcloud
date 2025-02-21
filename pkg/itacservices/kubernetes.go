@@ -146,6 +146,10 @@ type UpgradeClusterRequest struct {
 	K8sVersion string `json:"k8sversionname"`
 }
 
+type UpgradeClusterPayload struct {
+	K8sVersion string `json:"k8sversionname"`
+}
+
 func (client *IDCServicesClient) GetKubernetesClusters(ctx context.Context) (*IKSClusters, *string, error) {
 	params := struct {
 		Host         string
@@ -266,7 +270,7 @@ func (client *IDCServicesClient) GetIKSClusterByClusterUUID(ctx context.Context,
 	if err != nil {
 		return nil, nil, fmt.Errorf("error reading sshkey by resource id")
 	}
-	tflog.Debug(ctx, "iks create api response", map[string]any{"retcode": retcode, "retval": string(retval)})
+	tflog.Debug(ctx, "iks get cluster by UUID api response", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
 		return nil, nil, common.MapHttpError(retcode)
@@ -681,13 +685,16 @@ func (client *IDCServicesClient) UpgradeCluster(ctx context.Context, in *Upgrade
 		ClusterUUID:  in.ClusterId,
 	}
 
+	inArg := UpgradeClusterPayload{
+		K8sVersion: in.K8sVersion,
+	}
 	// Parse the template string with the provided data
 	parsedURL, err := common.ParseString(upgradeK8sClusterURL, params)
 	if err != nil {
 		return fmt.Errorf("error parsing the url")
 	}
 
-	inArgs, err := json.MarshalIndent(in, "", "    ")
+	inArgs, err := json.MarshalIndent(inArg, "", "    ")
 	if err != nil {
 		return fmt.Errorf("error parsing input arguments")
 	}
@@ -699,6 +706,30 @@ func (client *IDCServicesClient) UpgradeCluster(ctx context.Context, in *Upgrade
 	tflog.Debug(ctx, "iks upgrade cluster", map[string]any{"retcode": retcode, "retval": retval})
 	if retcode != http.StatusOK {
 		return common.MapHttpError(retcode)
+	}
+
+	cluster := &IKSCluster{}
+	if err := json.Unmarshal(retval, cluster); err != nil {
+		return fmt.Errorf("error parsing instance response")
+	}
+
+	backoffTimer := retry.NewConstant(5 * time.Second)
+	backoffTimer = retry.WithMaxDuration(1800*time.Second, backoffTimer)
+
+	if err := retry.Do(ctx, backoffTimer, func(_ context.Context) error {
+		cluster, _, err = client.GetIKSClusterByClusterUUID(ctx, in.ClusterId)
+		if err != nil {
+			return fmt.Errorf("error reading instance state after upgrade")
+		}
+		if cluster.ClusterState == "Active" {
+			return nil
+		} else if cluster.ClusterState == "Failed" {
+			return fmt.Errorf("instance state failed")
+		} else {
+			return retry.RetryableError(fmt.Errorf("iks cluster state not ready, retry again"))
+		}
+	}); err != nil {
+		return fmt.Errorf("iks cluster state not ready after maximum retries")
 	}
 
 	return nil

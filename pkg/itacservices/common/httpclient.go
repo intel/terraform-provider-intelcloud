@@ -24,6 +24,7 @@ func MakeGetAPICall(ctx context.Context, connURL, auth string, payload []byte) (
 	if auth != "" {
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", auth))
 	}
+	printRequest(req)
 	retries := 3
 	body := []byte{}
 	retcode := http.StatusOK
@@ -60,6 +61,7 @@ func MakePOSTAPICall(ctx context.Context, connURL, auth string, payload []byte) 
 	if auth != "" {
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", auth))
 	}
+	printRequest(req)
 	retries := 3
 	body := []byte{}
 	retcode := http.StatusOK
@@ -92,6 +94,7 @@ func MakeDeleteAPICall(ctx context.Context, connURL string, auth string, payload
 	if auth != "" {
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", auth))
 	}
+	printRequest(req)
 	retries := 3
 	body := []byte{}
 	retcode := http.StatusOK
@@ -126,6 +129,7 @@ func MakePutAPICall(ctx context.Context, connURL, auth string, payload []byte) (
 	if auth != "" {
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", auth))
 	}
+	printRequest(req)
 	retries := 3
 	body := []byte{}
 	retcode := http.StatusOK
@@ -147,4 +151,17 @@ func MakePutAPICall(ctx context.Context, connURL, auth string, payload []byte) (
 	}
 	// body = []byte(sampleFilesystemList)
 	return retcode, body, nil
+}
+
+func printRequest(req *http.Request) {
+	fmt.Printf("Method: %s\nURL: %s\nHeaders: %v\n", req.Method, req.URL.String(), req.Header)
+	//fmt.Printf("nHeaders: %v\n", req.Header)
+
+	if req.Body != nil {
+		bodyBytes, _ := io.ReadAll(req.Body)
+		fmt.Printf("Body: %s\n", string(bodyBytes))
+
+		// Recreate the body since io.ReadAll drains it
+		req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	}
 }
