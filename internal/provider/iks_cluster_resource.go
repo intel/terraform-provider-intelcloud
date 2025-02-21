@@ -231,6 +231,7 @@ func (r *iksClusterResource) Read(ctx context.Context, req resource.ReadRequest,
 	// Map response body to schema and populate Computed attribute values
 	state.ID = types.StringValue(iksClusterResp.ResourceId)
 	state.ClusterStatus = types.StringValue(iksClusterResp.ClusterState)
+	state.K8sversion = types.StringValue(iksClusterResp.K8sVersion)
 	if cloudaccount != nil {
 		state.Cloudaccount = types.StringValue(*cloudaccount)
 	} else {

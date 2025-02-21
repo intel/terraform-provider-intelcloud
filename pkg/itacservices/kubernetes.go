@@ -708,5 +708,29 @@ func (client *IDCServicesClient) UpgradeCluster(ctx context.Context, in *Upgrade
 		return common.MapHttpError(retcode)
 	}
 
+	cluster := &IKSCluster{}
+	if err := json.Unmarshal(retval, cluster); err != nil {
+		return fmt.Errorf("error parsing instance response")
+	}
+
+	backoffTimer := retry.NewConstant(5 * time.Second)
+	backoffTimer = retry.WithMaxDuration(1800*time.Second, backoffTimer)
+
+	if err := retry.Do(ctx, backoffTimer, func(_ context.Context) error {
+		cluster, _, err = client.GetIKSClusterByClusterUUID(ctx, in.ClusterId)
+		if err != nil {
+			return fmt.Errorf("error reading instance state after upgrade")
+		}
+		if cluster.ClusterState == "Active" {
+			return nil
+		} else if cluster.ClusterState == "Failed" {
+			return fmt.Errorf("instance state failed")
+		} else {
+			return retry.RetryableError(fmt.Errorf("iks cluster state not ready, retry again"))
+		}
+	}); err != nil {
+		return fmt.Errorf("iks cluster state not ready after maximum retries")
+	}
+
 	return nil
 }
