@@ -119,7 +119,7 @@ func (client *IDCServicesClient) CreateObjectStorageBucket(ctx context.Context, 
 		return nil, fmt.Errorf("error reading bucket create response")
 	}
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	bucket := &ObjectBucket{}
@@ -172,7 +172,7 @@ func (client *IDCServicesClient) GetObjectBucketByResourceId(ctx context.Context
 	}
 
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	tflog.Debug(ctx, "object read api", map[string]any{"retcode": retcode})
@@ -208,7 +208,7 @@ func (client *IDCServicesClient) DeleteBucketByResourceId(ctx context.Context, r
 	tflog.Debug(ctx, "object bucket delete api", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
-		return common.MapHttpError(retcode)
+		return common.MapHttpError(retcode, retval)
 	}
 
 	tflog.Debug(ctx, "object bucket delete api", map[string]any{"retcode": retcode})
@@ -243,7 +243,7 @@ func (client *IDCServicesClient) CreateObjectStorageUser(ctx context.Context, in
 		return nil, fmt.Errorf("error reading bucket user create response")
 	}
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	objUser := &ObjectUser{}
@@ -279,7 +279,7 @@ func (client *IDCServicesClient) DeleteObjectUserByResourceId(ctx context.Contex
 	tflog.Debug(ctx, "object bucket user delete api", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
-		return common.MapHttpError(retcode)
+		return common.MapHttpError(retcode, retval)
 	}
 
 	tflog.Debug(ctx, "object bucket user delete api", map[string]any{"retcode": retcode})
@@ -310,7 +310,7 @@ func (client *IDCServicesClient) GetObjectUserByUserId(ctx context.Context, user
 	}
 
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	tflog.Debug(ctx, "object user read api", map[string]any{"retcode": retcode})

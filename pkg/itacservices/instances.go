@@ -135,7 +135,7 @@ func (client *IDCServicesClient) GetInstances(ctx context.Context) (*Instances, 
 	}
 
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	instances := Instances{}
@@ -174,7 +174,7 @@ func (client *IDCServicesClient) CreateInstance(ctx context.Context, in *Instanc
 	tflog.Debug(ctx, "instance create api response", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	instance := &Instance{}
@@ -233,7 +233,7 @@ func (client *IDCServicesClient) GetInstanceByResourceId(ctx context.Context, re
 	}
 
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	tflog.Debug(ctx, "get instance api", map[string]any{"retcode": retcode})
@@ -261,13 +261,13 @@ func (client *IDCServicesClient) DeleteInstanceByResourceId(ctx context.Context,
 		return fmt.Errorf("error parsing the url")
 	}
 
-	retcode, _, err := common.MakeDeleteAPICall(ctx, parsedURL, *client.Apitoken, nil)
+	retcode, retval, err := common.MakeDeleteAPICall(ctx, parsedURL, *client.Apitoken, nil)
 	if err != nil {
 		return fmt.Errorf("error deleting sshkey by resource id")
 	}
 
 	if retcode != http.StatusOK {
-		return common.MapHttpError(retcode)
+		return common.MapHttpError(retcode, retval)
 	}
 
 	tflog.Debug(ctx, "instance delete api", map[string]any{"retcode": retcode})

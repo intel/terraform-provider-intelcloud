@@ -66,7 +66,7 @@ func (client *IDCServicesClient) GetSSHKeys(ctx context.Context) (*SSHKeys, erro
 		return nil, fmt.Errorf("error reading sshkeys")
 	}
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	sshkeys := SSHKeys{}
@@ -104,7 +104,7 @@ func (client *IDCServicesClient) CreateSSHkey(ctx context.Context, in *SSHKeyCre
 	}
 
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	sshkey := SSHKey{}
@@ -137,7 +137,7 @@ func (client *IDCServicesClient) GetSSHKeyByResourceId(ctx context.Context, reso
 	}
 
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	tflog.Debug(ctx, "sshkey read api", map[string]any{"retcode": retcode})
@@ -165,13 +165,13 @@ func (client *IDCServicesClient) DeleteSSHKeyByResourceId(ctx context.Context, r
 		return fmt.Errorf("error parsing the url")
 	}
 
-	retcode, _, err := common.MakeDeleteAPICall(ctx, parsedURL, *client.Apitoken, nil)
+	retcode, retval, err := common.MakeDeleteAPICall(ctx, parsedURL, *client.Apitoken, nil)
 	if err != nil {
 		return fmt.Errorf("error deleting sshkey by resource id")
 	}
 
 	if retcode != http.StatusOK {
-		return common.MapHttpError(retcode)
+		return common.MapHttpError(retcode, retval)
 	}
 
 	tflog.Debug(ctx, "sshkey delete api", map[string]any{"retcode": retcode})

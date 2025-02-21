@@ -172,8 +172,9 @@ func (client *IDCServicesClient) GetKubernetesClusters(ctx context.Context) (*IK
 	}
 
 	if retcode != http.StatusOK {
-		return nil, nil, common.MapHttpError(retcode)
+		return nil, nil, common.MapHttpError(retcode, retval)
 	}
+
 	clusters := IKSClusters{}
 	if err := json.Unmarshal(retval, &clusters); err != nil {
 		tflog.Debug(ctx, "iks read api", map[string]any{"err": err})
@@ -212,7 +213,7 @@ func (client *IDCServicesClient) CreateIKSCluster(ctx context.Context, in *IKSCr
 	tflog.Debug(ctx, "iks create api response", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
-		return nil, nil, common.MapHttpError(retcode)
+		return nil, nil, common.MapHttpError(retcode, retval)
 	}
 
 	cluster := &IKSCluster{}
@@ -273,7 +274,7 @@ func (client *IDCServicesClient) GetIKSClusterByClusterUUID(ctx context.Context,
 	tflog.Debug(ctx, "iks get cluster by UUID api response", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
-		return nil, nil, common.MapHttpError(retcode)
+		return nil, nil, common.MapHttpError(retcode, retval)
 	}
 
 	cluster := IKSCluster{}
@@ -301,13 +302,13 @@ func (client *IDCServicesClient) DeleteIKSCluster(ctx context.Context, clusterUU
 	}
 
 	tflog.Debug(ctx, "iks cluster delete api", map[string]any{"parsedurl": parsedURL})
-	retcode, _, err := common.MakeDeleteAPICall(ctx, parsedURL, *client.Apitoken, nil)
+	retcode, retval, err := common.MakeDeleteAPICall(ctx, parsedURL, *client.Apitoken, nil)
 	if err != nil {
 		return fmt.Errorf("error deleting sshkey by resource id")
 	}
 
 	if retcode != http.StatusOK {
-		return common.MapHttpError(retcode)
+		return common.MapHttpError(retcode, retval)
 	}
 
 	tflog.Debug(ctx, "iks cluster delete api", map[string]any{"retcode": retcode})
@@ -346,7 +347,7 @@ func (client *IDCServicesClient) CreateIKSNodeGroup(ctx context.Context, in *IKS
 	tflog.Debug(ctx, "iks node group create api response", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
-		return nil, nil, common.MapHttpError(retcode)
+		return nil, nil, common.MapHttpError(retcode, retval)
 	}
 
 	ng := &NodeGroup{}
@@ -401,7 +402,7 @@ func (client *IDCServicesClient) GetIKSNodeGroupByID(ctx context.Context, cluste
 	tflog.Debug(ctx, "iks node group read response", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
-		return nil, nil, common.MapHttpError(retcode)
+		return nil, nil, common.MapHttpError(retcode, retval)
 	}
 
 	nodeGroup := NodeGroup{}
@@ -442,7 +443,7 @@ func (client *IDCServicesClient) CreateIKSStorage(ctx context.Context, in *IKSSt
 	tflog.Debug(ctx, "iks file storage create api response", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
-		return nil, nil, common.MapHttpError(retcode)
+		return nil, nil, common.MapHttpError(retcode, retval)
 	}
 
 	storage := &K8sStorage{}
@@ -510,7 +511,7 @@ func (client *IDCServicesClient) CreateIKSLoadBalancer(ctx context.Context, in *
 	tflog.Debug(ctx, "iks load balancer create api response", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
-		return nil, nil, common.MapHttpError(retcode)
+		return nil, nil, common.MapHttpError(retcode, retval)
 	}
 
 	iksLB := &IKSLoadBalancer{}
@@ -564,7 +565,7 @@ func (client *IDCServicesClient) GetIKSLoadBalancerByID(ctx context.Context, clu
 	tflog.Debug(ctx, "iks load balancer read response", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	iksLB := IKSLoadBalancer{}
@@ -598,7 +599,7 @@ func (client *IDCServicesClient) GetIKSLoadBalancerByClusterUUID(ctx context.Con
 	tflog.Debug(ctx, "iks load balancer read response", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	resp := IKSLBsByCluster{}
@@ -628,13 +629,13 @@ func (client *IDCServicesClient) DeleteIKSNodeGroup(ctx context.Context, cluster
 	}
 
 	tflog.Debug(ctx, "iks node group delete api", map[string]any{"parsedurl": parsedURL})
-	retcode, _, err := common.MakeDeleteAPICall(ctx, parsedURL, *client.Apitoken, nil)
+	retcode, retval, err := common.MakeDeleteAPICall(ctx, parsedURL, *client.Apitoken, nil)
 	if err != nil {
 		return fmt.Errorf("error deleting iks node group by resource id")
 	}
 	tflog.Debug(ctx, "iks node group delete api", map[string]any{"retcode": retcode})
 	if retcode != http.StatusOK {
-		return common.MapHttpError(retcode)
+		return common.MapHttpError(retcode, retval)
 	}
 
 	return nil
@@ -663,7 +664,7 @@ func (client *IDCServicesClient) GetClusterKubeconfig(ctx context.Context, clust
 	}
 	tflog.Debug(ctx, "iks get kubeconfig", map[string]any{"retcode": retcode})
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	resp := KubeconfigResponse{}
@@ -703,10 +704,10 @@ func (client *IDCServicesClient) UpgradeCluster(ctx context.Context, in *Upgrade
 	if err != nil {
 		return fmt.Errorf("error calling upgrade cluster api")
 	}
-	tflog.Debug(ctx, "iks upgrade cluster", map[string]any{"retcode": retcode, "retval": retval})
 	if retcode != http.StatusOK {
-		return common.MapHttpError(retcode)
+		return common.MapHttpError(retcode, retval)
 	}
+	tflog.Debug(ctx, "iks upgrade cluster", map[string]any{"retcode": retcode, "retval": retval})
 
 	cluster := &IKSCluster{}
 	if err := json.Unmarshal(retval, cluster); err != nil {
