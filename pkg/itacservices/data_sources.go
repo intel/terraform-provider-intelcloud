@@ -60,7 +60,7 @@ func (client *IDCServicesClient) GetMachineImages(ctx context.Context) (*Machine
 	}
 	tflog.Debug(ctx, "machine images api", map[string]any{"retcode": retcode, "retval": string(retval), "token": *client.Apitoken})
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	images := MachineImageResponse{}
@@ -89,7 +89,7 @@ func (client *IDCServicesClient) GetInstanceTypes(ctx context.Context) (*Instanc
 	}
 
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 	instType := InstanceTypeResponse{}
 	if err := json.Unmarshal(retval, &instType); err != nil {

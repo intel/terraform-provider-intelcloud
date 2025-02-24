@@ -116,7 +116,7 @@ func (client *IDCServicesClient) GetFilesystems(ctx context.Context) (*Filesyste
 	}
 
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 	filesystems := Filesystems{}
 	if err := json.Unmarshal(retval, &filesystems); err != nil {
@@ -134,7 +134,7 @@ func (client *IDCServicesClient) GetFilesystems(ctx context.Context) (*Filesyste
 		}
 	}
 
-	for idx, _ := range filesystems.FilesystemList {
+	for idx := range filesystems.FilesystemList {
 		filesystems.FilesystemList[idx].Status.Mount.Password = *password
 	}
 
@@ -162,7 +162,7 @@ func (client *IDCServicesClient) GenerateFilesystemLoginCredentials(ctx context.
 		return nil, fmt.Errorf("error generating login credentials")
 	}
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 	creds := LoginCreds{}
 	if err := json.Unmarshal(retval, &creds); err != nil {
@@ -198,7 +198,7 @@ func (client *IDCServicesClient) CreateFilesystem(ctx context.Context, in *Files
 		return nil, fmt.Errorf("error reading filesystem create response")
 	}
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	filesystem := &Filesystem{}
@@ -261,7 +261,7 @@ func (client *IDCServicesClient) GetFilesystemByResourceId(ctx context.Context, 
 	}
 
 	if retcode != http.StatusOK {
-		return nil, common.MapHttpError(retcode)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	tflog.Debug(ctx, "filesystem read api", map[string]any{"retcode": retcode})
@@ -297,7 +297,7 @@ func (client *IDCServicesClient) DeleteFilesystemByResourceId(ctx context.Contex
 	tflog.Debug(ctx, "filesystem delete api", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
-		return common.MapHttpError(retcode)
+		return common.MapHttpError(retcode, retval)
 	}
 
 	return nil
@@ -339,7 +339,7 @@ func (client *IDCServicesClient) UpdateFilesystem(ctx context.Context, in *Files
 	tflog.Debug(ctx, "filesystem update api", map[string]any{"retcode": retcode, "retval": string(retval), "error": err})
 
 	if retcode != http.StatusOK {
-		return common.MapHttpError(retcode)
+		return common.MapHttpError(retcode, retval)
 	}
 
 	return nil
