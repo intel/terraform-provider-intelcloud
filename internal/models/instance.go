@@ -18,11 +18,13 @@ type InstanceModel struct {
 }
 
 type InstanceSpec struct {
-	InstanceGroup     types.String   `tfsdk:"instance_group"`
-	InstanceType      types.String   `tfsdk:"instance_type"`
-	MachineImage      types.String   `tfsdk:"machine_image"`
-	SSHPublicKeyNames []types.String `tfsdk:"ssh_public_key_names"`
-	UserData          types.String   `tfsdk:"user_data"`
+	InstanceGroup       types.String   `tfsdk:"instance_group"`
+	InstanceType        types.String   `tfsdk:"instance_type"`
+	MachineImage        types.String   `tfsdk:"machine_image"`
+	SSHPublicKeyNames   []types.String `tfsdk:"ssh_public_key_names"`
+	UserData            types.String   `tfsdk:"user_data"`
+	QuickConnectEnabled types.String   `tfsdk:"quick_connect_enabled"`
+	QuickConnectUrl     types.String   `tfsdk:"quick_connect_url"`
 }
 
 type NetworkInterfaceSpec struct {
