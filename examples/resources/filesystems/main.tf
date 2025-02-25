@@ -2,14 +2,14 @@ terraform {
   required_providers {
     intelcloud = {
       source = "intel/intelcloud"
-      version = "0.0.7"
+      version = "0.0.8"
     }
   }
 }
 
 
 provider "intelcloud" {
-  region = "us-region-2"
+  region = "us-region-3"
 }
 
 resource "intelcloud_filesystem" "example" {

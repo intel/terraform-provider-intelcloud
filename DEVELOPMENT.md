@@ -36,14 +36,14 @@ export ITAC_CLIENT_SECRET=<Client secret>
 
 ## Terraform configuration
 
-To quickly get started using the ITAC provider for Terraform, configure the provider as shown below. Full provider documentation with details on all options available is located on the [Terraform Registry site](https://registry.terraform.io/providers/intel/intel-cloud/latest/docs).
+To quickly get started using the ITAC provider for Terraform, configure the provider as shown below. Full provider documentation with details on all options available is located on the [Terraform Registry site](https://registry.terraform.io/providers/intel/intelcloud/latest/docs).
 
 ```hcl
 terraform {
   required_providers {
-    intel-cloud = {
+    intelcloud = {
       source = "intel/intelcloud"
-      version = "0.0.7"
+      version = "0.0.8"
     }
   }
 }

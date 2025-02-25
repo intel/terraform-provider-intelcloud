@@ -4,7 +4,7 @@ This ITAC provider plugin brings the power of Hashicorp's Terraform to Intel Tib
 
 Useful links:
 - [ITAC Documentation](https://staging.console.idcservice.net/docs/index.html)
-- [ITAC Provider Documentation](https://registry.terraform.io/providers/intel/intel-cloud/latest/docs)
+- [ITAC Provider Documentation](https://registry.terraform.io/providers/intel/intelcloud/latest/docs)
 - [Terraform Documentation](https://www.terraform.io/docs/language/index.html)
 <!-- [Terraform Provider Development](DEVELOPMENT.md) -->
 
@@ -37,18 +37,18 @@ export ITAC_CLIENT_SECRET=<Client secret>
 ```
 
 
-To quickly get started using the Intel provider for Terraform, configure the provider as shown below. Full provider documentation with details on all options available is located on the [Terraform Registry site](https://registry.terraform.io/providers/intel/intel-cloud/latest/docs).
+To quickly get started using the Intel provider for Terraform, configure the provider as shown below. Full provider documentation with details on all options available is located on the [Terraform Registry site](https://registry.terraform.io/providers/intel/intelcloud/latest/docs).
 
 ```hcl
 terraform {
   required_providers {
-    intel-cloud = {
-      source = "intel/intel-cloud"
-      version = "0.0.2"
+    intelcloud = {
+      source = "intel/intelcloud"
+      version = "0.0.8"
     }
   }
 }
 
-provider "intel-cloud" {
+provider "intelcloud" {
   # Configuration options
 }
