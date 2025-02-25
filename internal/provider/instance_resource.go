@@ -108,6 +108,12 @@ func (r *computeInstanceResource) Schema(_ context.Context, _ resource.SchemaReq
 					"user_data": schema.StringAttribute{
 						Optional: true,
 					},
+					"quick_connect_enabled": schema.StringAttribute{
+						Optional: true,
+					},
+					"quick_connect_url": schema.StringAttribute{
+						Computed: true,
+					},
 				},
 			},
 			"interfaces": schema.ListNestedAttribute{
@@ -224,9 +230,10 @@ func (r *computeInstanceResource) Create(ctx context.Context, req resource.Creat
 				Name string "json:\"name\""
 				VNet string "json:\"vNet\""
 			} "json:\"interfaces\""
-			MachineImage      string   "json:\"machineImage\""
-			SshPublicKeyNames []string "json:\"sshPublicKeyNames\""
-			UserData          string   "json:\"userData,omitempty\""
+			MachineImage        string   "json:\"machineImage\""
+			SshPublicKeyNames   []string "json:\"sshPublicKeyNames\""
+			UserData            string   "json:\"userData,omitempty\""
+			QuickConnectEnabled string   "json:\"quickConnectEnabled,omitempty\""
 		}{
 			AvailabilityZone: fmt.Sprintf("%sa", *r.client.Region),
 			InstanceGroup:    plan.Spec.InstanceGroup.ValueString(),
@@ -239,10 +246,11 @@ func (r *computeInstanceResource) Create(ctx context.Context, req resource.Creat
 					VNet: fmt.Sprintf("%sa-default", *r.client.Region),
 				},
 			},
-			InstanceType:      plan.Spec.InstanceType.ValueString(),
-			MachineImage:      plan.Spec.MachineImage.ValueString(),
-			UserData:          plan.Spec.UserData.ValueString(),
-			SshPublicKeyNames: sshKeys,
+			InstanceType:        plan.Spec.InstanceType.ValueString(),
+			MachineImage:        plan.Spec.MachineImage.ValueString(),
+			UserData:            plan.Spec.UserData.ValueString(),
+			SshPublicKeyNames:   sshKeys,
+			QuickConnectEnabled: capitalize(plan.Spec.QuickConnectEnabled.ValueString()),
 		},
 	}
 
@@ -307,6 +315,9 @@ func (r *computeInstanceResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
+	// Set quick connect URL if required
+	plan.Spec.QuickConnectUrl = types.StringValue(r.getQuickConnectUrl(plan.Spec.QuickConnectEnabled, instResp))
+
 	// Set state to fully populated data
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
@@ -346,10 +357,12 @@ func (r *computeInstanceResource) Read(ctx context.Context, req resource.ReadReq
 	state.Name = types.StringValue(instance.Metadata.Name)
 	state.AvailabilityZone = types.StringValue(instance.Spec.AvailabilityZone)
 	state.Spec = &models.InstanceSpec{
-		InstanceGroup: types.StringValue(instance.Spec.InstanceGroup),
-		InstanceType:  types.StringValue(instance.Spec.InstanceType),
-		MachineImage:  types.StringValue(instance.Spec.MachineImage),
-		UserData:      types.StringValue(instance.Spec.UserData),
+		InstanceGroup:       types.StringValue(instance.Spec.InstanceGroup),
+		InstanceType:        types.StringValue(instance.Spec.InstanceType),
+		MachineImage:        types.StringValue(instance.Spec.MachineImage),
+		UserData:            types.StringValue(instance.Spec.UserData),
+		QuickConnectEnabled: types.StringValue(instance.Spec.QuickConnectEnabled),
+		QuickConnectUrl:     types.StringValue(instance.Spec.QuickConnectUrl),
 	}
 
 	for _, k := range instance.Spec.SshPublicKeyNames {
@@ -439,4 +452,15 @@ func (r *computeInstanceResource) Delete(ctx context.Context, req resource.Delet
 		)
 		return
 	}
+}
+
+func (r *computeInstanceResource) getQuickConnectUrl(quickConnectEnabled types.String, inst *itacservices.Instance) string {
+	if capitalize(quickConnectEnabled.ValueString()) == "True" {
+		return fmt.Sprintf("https://%s.connect.%s.devcloudtenant.io/v1/connect/%s/%s",
+			inst.Metadata.ResourceId,
+			*r.client.Region,
+			*r.client.Cloudaccount,
+			inst.Metadata.ResourceId)
+	}
+	return ""
 }

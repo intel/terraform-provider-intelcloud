@@ -93,6 +93,9 @@ func (d *instanceDataSource) Schema(_ context.Context, _ datasource.SchemaReques
 								"user_data": schema.StringAttribute{
 									Optional: true,
 								},
+								"quick_connect_enabled": schema.StringAttribute{
+									Optional: true,
+								},
 							},
 						},
 						"interfaces": schema.ListNestedAttribute{

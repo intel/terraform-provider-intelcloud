@@ -42,9 +42,11 @@ type Instance struct {
 			Name string `json:"name"`
 			VNet string `json:"vnet"`
 		} `json:"interfaces"`
-		MachineImage      string   `json:"machineImage"`
-		SshPublicKeyNames []string `json:"sshPublicKeyNames"`
-		UserData          string   `json:"userData,omitempty"`
+		MachineImage        string   `json:"machineImage"`
+		SshPublicKeyNames   []string `json:"sshPublicKeyNames"`
+		UserData            string   `json:"userData,omitempty"`
+		QuickConnectEnabled string   `json:"quickConnectEnabled,omitempty"`
+		QuickConnectUrl     string   `json:"quickConnectUrl,omitempty"`
 	} `json:"spec"`
 	Status struct {
 		Interfaces []struct {
@@ -79,9 +81,10 @@ type InstanceCreateRequest struct {
 			Name string `json:"name"`
 			VNet string `json:"vNet"`
 		} `json:"interfaces"`
-		MachineImage      string   `json:"machineImage"`
-		SshPublicKeyNames []string `json:"sshPublicKeyNames"`
-		UserData          string   `json:"userData,omitempty"`
+		MachineImage        string   `json:"machineImage"`
+		SshPublicKeyNames   []string `json:"sshPublicKeyNames"`
+		UserData            string   `json:"userData,omitempty"`
+		QuickConnectEnabled string   `json:"quickConnectEnabled,omitempty"`
 	} `json:"spec"`
 }
 
