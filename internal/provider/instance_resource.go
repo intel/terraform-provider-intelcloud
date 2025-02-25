@@ -113,6 +113,7 @@ func (r *computeInstanceResource) Schema(_ context.Context, _ resource.SchemaReq
 					},
 					"quick_connect_url": schema.StringAttribute{
 						Computed: true,
+						Optional: true,
 					},
 				},
 			},
