@@ -11,12 +11,12 @@ This ITAC provider plugin brings the power of Hashicorp's Terraform to Intel Tib
 
 1. Clone the repository
 ```shell
-git clone https://github.com/intel/terraform-provider-intel-cloud
+git clone https://github.com/intel/terraform-provider-intelcloud
 ```
 
 2. Enter the repository directory
 ```shell
-cd terraform-provider-intel-cloud
+cd terraform-provider-intelcloud
 ```
 
 3. Build the provider using the Go `install` command:
