@@ -6,6 +6,10 @@ variable "ssh_pubkey_path" {
   type = string
 }
 
+variable "ssh_privatekey_path" {
+  type = string
+}
+
 variable "ssh_user_email" {
   type = string
 }
