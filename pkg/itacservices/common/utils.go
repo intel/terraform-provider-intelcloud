@@ -39,7 +39,7 @@ func MapHttpError(code int, retval []byte) error {
 	case http.StatusInternalServerError:
 		return fmt.Errorf("Internal Server Error, message: %v", mapAPIErrorMessage(retval))
 	default:
-		return fmt.Errorf("error calling API")
+		return fmt.Errorf("error calling API, message: %v", mapAPIErrorMessage(retval))
 	}
 }
 

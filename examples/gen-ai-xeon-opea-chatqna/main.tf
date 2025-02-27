@@ -2,14 +2,14 @@ terraform {
   required_providers {
     intelcloud = {
       source = "intel/intelcloud"
-      version = "0.0.7"
+      version = "0.0.8"
     }
   }
 }
 
 
 provider "intelcloud" {
-  region = "us-region-1"
+  region = "us-region-2"
 }
 
 # data "cloudinit_config" "ansible" {
@@ -47,6 +47,27 @@ resource "intelcloud_instance" "example" {
     user_data            = file("./cloud_init.yaml")
   }
   # depends_on = [intelcloud_sshkey.example]
+  provisioner "remote-exec" {
+    inline = [
+      "echo 'Waiting for cloud-init to finish...'",
+      "timeout=1200;",
+      "while ! grep -q 'finish: modules-final: SUCCESS:' /var/log/cloud-init.log; do sleep 30;",
+      "timeout=$((timeout - 30));",
+      "if [ $timeout -le 0 ]; then echo 'Timeout waiting for cloud-init' >&2; exit 1; fi; done",
+      "echo 'cloud-init finished.'"
+    ]
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_privatekey_path)
+      host        = intelcloud_instance.example.interfaces[0].address
+
+      # Configure SSH to use the jump server
+      bastion_host        = self.ssh_proxy.address
+      bastion_user        = "guest"
+      bastion_private_key = file(var.ssh_privatekey_path)
+    }
+  }
 }
 
 output "instance_order" {
