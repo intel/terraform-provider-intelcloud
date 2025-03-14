@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -17,8 +18,9 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = &iksClusterResource{}
-	_ resource.ResourceWithConfigure = &iksClusterResource{}
+	_ resource.Resource                = &iksClusterResource{}
+	_ resource.ResourceWithConfigure   = &iksClusterResource{}
+	_ resource.ResourceWithImportState = &iksClusterResource{}
 )
 
 // orderKubernetesModel maps the resource schema data.
@@ -372,6 +374,11 @@ func (r *iksClusterResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 	tflog.Info(ctx, "no change detected change in cluster spec, skipping update")
+}
+
+func (r *iksClusterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Retrieve import ID and save to id attribute
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Delete deletes the resource and removes the Terraform state on success.

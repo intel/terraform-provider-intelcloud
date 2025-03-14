@@ -7,6 +7,7 @@ import (
 	"terraform-provider-intelcloud/internal/models"
 	"terraform-provider-intelcloud/pkg/itacservices"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -14,8 +15,9 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = &iksLBResource{}
-	_ resource.ResourceWithConfigure = &iksLBResource{}
+	_ resource.Resource                = &iksLBResource{}
+	_ resource.ResourceWithConfigure   = &iksLBResource{}
+	_ resource.ResourceWithImportState = &iksLBResource{}
 )
 
 // orderIKSNodeGroupModel maps the resource schema data.
@@ -179,4 +181,9 @@ func (r *iksLBResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *iksLBResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+}
+
+func (r *iksLBResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Retrieve import ID and save to id attribute
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
