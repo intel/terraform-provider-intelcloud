@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -29,6 +30,12 @@ type idcProviderModel struct {
 	APIToken     types.String `tfsdk:"apitoken"`
 	ClientId     types.String `tfsdk:"clientid"`
 	ClientSecret types.String `tfsdk:"clientsecret"`
+	Endpoints    types.Object `tfsdk:"endpoints"`
+}
+
+type endpointsModel struct {
+	API  types.String `tfsdk:"api"`
+	Auth types.String `tfsdk:"auth"`
 }
 
 // New is a helper function to simplify provider server and testing implementation.
@@ -73,6 +80,17 @@ func (p *idcProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *
 			"clientsecret": schema.StringAttribute{
 				Optional: true,
 			},
+			"endpoints": schema.SingleNestedAttribute{
+				Optional: true,
+				Attributes: map[string]schema.Attribute{
+					"api": schema.StringAttribute{
+						Optional: true,
+					},
+					"auth": schema.StringAttribute{
+						Optional: true,
+					},
+				},
+			},
 		},
 	}
 }
@@ -109,6 +127,25 @@ func (p *idcProvider) Configure(ctx context.Context, req provider.ConfigureReque
 
 	if !config.ClientSecret.IsNull() {
 		clientsecret = config.ClientSecret.ValueString()
+	}
+
+	// Retrieve endpoints if set
+	var clientTokenEndpoint, serviceEndpoint string
+	if !config.Endpoints.IsNull() {
+		var endpoints endpointsModel
+
+		diags := config.Endpoints.As(ctx, &endpoints, basetypes.ObjectAsOptions{})
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		if !endpoints.API.IsNull() {
+			serviceEndpoint = endpoints.API.ValueString()
+		}
+		if !endpoints.Auth.IsNull() {
+			clientTokenEndpoint = endpoints.Auth.ValueString()
+		}
 	}
 
 	// If any of the expected configurations are missing, return
@@ -157,8 +194,9 @@ func (p *idcProvider) Configure(ctx context.Context, req provider.ConfigureReque
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	clientTokenEndpoint, serviceEndpoint := discoverITACServiceEndpoint(region)
+	if clientTokenEndpoint == "" || serviceEndpoint == "" {
+		clientTokenEndpoint, serviceEndpoint = discoverITACServiceEndpoint(region)
+	}
 
 	// Create a new HashiCups client using the configuration values
 	client, err := itacservices.NewClient(ctx, &serviceEndpoint, &clientTokenEndpoint, &cloudaccount, &clientid, &clientsecret, &region)
@@ -207,8 +245,6 @@ func (p *idcProvider) Resources(_ context.Context) []func() resource.Resource {
 
 func discoverITACServiceEndpoint(region string) (string, string) {
 	switch region {
-	case "us-staging-1":
-		return "https://client-token.staging.api.idcservice.net", "https://us-staging-1-sdk-api.eglb.intel.com"
 	case "us-region-1":
 		return "https://client-token.api.idcservice.net", "https://us-region-1-sdk-api.cloud.intel.com"
 	case "us-region-2":
