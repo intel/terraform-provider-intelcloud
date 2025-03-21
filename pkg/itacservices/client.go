@@ -69,7 +69,7 @@ func NewClient(ctx context.Context, host, tokenSvc, cloudaccount, clientid, clie
 	req.Header.Set("Authorization", authEncoded)
 	client := &http.Client{Timeout: 60 * time.Second}
 
-	tflog.Info(ctx, "making api client request", map[string]interface{}{"request": req.Header, "url": parsedURL, "auth": authEncoded})
+	tflog.Info(ctx, "making api client request", map[string]interface{}{"request": req.Header, "url": parsedURL})
 
 	resp, err := client.Do(req)
 	if err != nil {
