@@ -2,10 +2,6 @@ variable "ssh_pubkey_path" {
   type = string
 }
 
-variable "ssh_user_email" {
-  type = string
-}
-
 variable "filesystem_description" {
   type    = string
   default = "demo filesystem"

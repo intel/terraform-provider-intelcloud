@@ -35,7 +35,6 @@ resource "idc_sshkey" "sshkey-1" {
   }
   spec = {
     ssh_public_key = file(var.ssh_pubkey_path)
-    owner_email    = var.ssh_user_email
   }
 }
 

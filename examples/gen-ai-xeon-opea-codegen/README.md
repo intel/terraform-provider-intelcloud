@@ -12,13 +12,12 @@ Change the `cloud_init.yaml` file to add your hugging face token (you can create
 ```shell
   - echo 'export HUGGINGFACEHUB_API_TOKEN=<HUGGINGFACE_API_TOKEN>' | sudo tee -a /etc/profile.d/opea.sh
 ```
-Change the `terraform.tfvars` file to add your `ssh_keyname` , `ssh_pubkey_path` and `ssh_user_email`
+Change the `terraform.tfvars` file to add your `ssh_keyname` , `ssh_pubkey_path` 
 ```shell
 idc_region            = "us-region-2"
 ssh_key_name          = "<SSH_KEY>"
 instance_name         = "genai-chatqna-demo3"
 ssh_pubkey_path       = "<PATH_TO_SSH_PUBKEY>"
-ssh_user_email        = "<USER_EMAIL>"
 instance_type         = "vm-large"
 filesystem_name       = "shri-fs6"
 filesystem_size_in_tb = 1

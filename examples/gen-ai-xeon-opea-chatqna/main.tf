@@ -28,15 +28,14 @@ provider "intelcloud" {
 #   }
 # }
 
-# resource "intelcloud_sshkey" "example" {
-#    metadata = {
-#       name = var.ssh_key_name
-#     }
-#     spec = {
-#       ssh_public_key = file(var.ssh_pubkey_path)
-#       owner_email = var.ssh_user_email
-#     }
-# }
+ resource "intelcloud_sshkey" "example" {
+    metadata = {
+       name = var.ssh_key_name
+     }
+     spec = {
+       ssh_public_key = file(var.ssh_pubkey_path)
+     }
+ }
 
 resource "intelcloud_instance" "example" {
   name = var.instance_name
