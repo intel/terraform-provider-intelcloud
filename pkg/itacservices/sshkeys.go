@@ -41,7 +41,6 @@ type SSHKeyCreateRequest struct {
 	} `json:"metadata"`
 	Spec struct {
 		SSHPublicKey string `json:"sshPublicKey"`
-		OwnerEmail   string `json:"ownerEmail"`
 	} `json:"spec"`
 }
 

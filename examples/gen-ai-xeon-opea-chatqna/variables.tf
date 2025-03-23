@@ -10,10 +10,6 @@ variable "ssh_privatekey_path" {
   type = string
 }
 
-variable "ssh_user_email" {
-  type = string
-}
-
 variable "instance_name" {
   type = string
 }

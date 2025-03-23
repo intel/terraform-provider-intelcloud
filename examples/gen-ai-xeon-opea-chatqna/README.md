@@ -18,7 +18,6 @@ idc_region            = "us-region-2"
 ssh_key_name          = "<SSH_KEY>"
 instance_name         = "genai-chatqna-demo3"
 ssh_pubkey_path       = "<PATH_TO_SSH_PUBKEY>"
-ssh_user_email        = "<USER_EMAIL>"
 instance_type         = "vm-large"
 filesystem_name       = "shri-fs6"
 filesystem_size_in_tb = 1

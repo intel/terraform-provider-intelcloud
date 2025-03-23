@@ -88,7 +88,8 @@ func (r *sshKeyResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						Required: true,
 					},
 					"owner_email": schema.StringAttribute{
-						Required: true,
+						Computed: true,
+						Optional: true,
 					},
 				},
 			},
@@ -115,10 +116,8 @@ func (r *sshKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 		},
 		Spec: struct {
 			SSHPublicKey string "json:\"sshPublicKey\""
-			OwnerEmail   string "json:\"ownerEmail\""
 		}{
 			SSHPublicKey: plan.Spec.SSHPublicKey.ValueString(),
-			OwnerEmail:   plan.Spec.OwnerEmail.ValueString(),
 		},
 	}
 	tflog.Info(ctx, "making a call to IDC Service for create sshkey")
@@ -135,6 +134,7 @@ func (r *sshKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 	plan.Metadata.CreatedAt = types.StringValue(time.Now().Format(time.RFC850))
 	plan.Metadata.ResourceId = types.StringValue(sshkeyCreateResp.Metadata.ResourceId)
 	plan.Metadata.Cloudaccount = types.StringValue(sshkeyCreateResp.Metadata.Cloudaccount)
+	plan.Spec.OwnerEmail = types.StringValue(sshkeyCreateResp.Spec.OwnerEmail)
 
 	// Set state to fully populated data
 	diags = resp.State.Set(ctx, plan)
