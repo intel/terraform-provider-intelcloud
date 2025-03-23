@@ -1,5 +1,3 @@
-// INTEL CONFIDENTIAL
-// Copyright (C) 2023 Intel Corporation
 package common
 
 import (
@@ -14,8 +12,7 @@ import (
 
 // MakeGetAPICall :
 func MakeGetAPICall(ctx context.Context, connURL, auth string, payload []byte) (int, []byte, error) {
-	// logger := log.FromContext(ctx).WithName("common.MakeGetAPICall")
-	// http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: false}
+
 	req, err := http.NewRequest("GET", connURL, bytes.NewBuffer(payload))
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
@@ -44,14 +41,12 @@ func MakeGetAPICall(ctx context.Context, connURL, auth string, payload []byte) (
 		retcode = resp.StatusCode
 		break
 	}
-	// body = []byte(sampleFilesystemList)
 	return retcode, body, nil
 }
 
 // MakePOSTAPICall :
 func MakePOSTAPICall(ctx context.Context, connURL, auth string, payload []byte) (int, []byte, error) {
 
-	// http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: false}
 	req, err := http.NewRequest("POST", connURL, bytes.NewBuffer(payload))
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
@@ -119,8 +114,6 @@ func MakeDeleteAPICall(ctx context.Context, connURL string, auth string, payload
 
 // MakePutAPICall :
 func MakePutAPICall(ctx context.Context, connURL, auth string, payload []byte) (int, []byte, error) {
-	// logger := log.FromContext(ctx).WithName("common.MakeGetAPICall")
-	// http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: false}
 	req, err := http.NewRequest("PUT", connURL, bytes.NewBuffer(payload))
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
@@ -149,13 +142,11 @@ func MakePutAPICall(ctx context.Context, connURL, auth string, payload []byte) (
 		retcode = resp.StatusCode
 		break
 	}
-	// body = []byte(sampleFilesystemList)
 	return retcode, body, nil
 }
 
 func printRequest(req *http.Request) {
 	fmt.Printf("Method: %s\nURL: %s\nHeaders: %v\n", req.Method, req.URL.String(), req.Header)
-	//fmt.Printf("nHeaders: %v\n", req.Header)
 
 	if req.Body != nil {
 		bodyBytes, _ := io.ReadAll(req.Body)
