@@ -1,6 +1,6 @@
-# ITAC Terraform Provider
+# Intel Tiber AI Cloud Terraform Provider
 
-This ITAC provider plugin brings the power of Hashicorp's Terraform to Intel Tiber AI Cloud (ITAC). It allows developers to model and manage their ITAC Resources through HCL IaaC (Infrastructure as a Code).
+This Intel Tiber AI Cloud provider plugin brings the power of Hashicorp's Terraform to Intel Tiber AI Cloud. It allows developers to model and manage their AI Cloud Resources through HCL IaaC (Infrastructure as a Code).
 
 ## Requirements
 
@@ -24,8 +24,8 @@ cd terraform-provider-intelcloud
 go install
 ```
 
-## ITAC Login Credentials
-For creating resources on ITAC, it requires auth credentials. More specifically, currently it requires following `three` environment variables to be configured.
+## Intel Tiber AI Cloud Login Credentials
+For creating resources on AI Cloud, it requires auth credentials. More specifically, currently it requires following `three` environment variables to be configured.
 
 ```
 export ITAC_CLOUDACCOUNT=<cloudaccount>
@@ -36,7 +36,7 @@ export ITAC_CLIENT_SECRET=<Client secret>
 
 ## Terraform configuration
 
-To quickly get started using the ITAC provider for Terraform, configure the provider as shown below. Full provider documentation with details on all options available is located on the [Terraform Registry site](https://registry.terraform.io/providers/intel/intelcloud/latest/docs).
+To quickly get started using the Intel Tiber AI Cloud provider for Terraform, configure the provider as shown below. Full provider documentation with details on all options available is located on the [Terraform Registry site](https://registry.terraform.io/providers/intel/intelcloud/latest/docs).
 
 ```hcl
 terraform {

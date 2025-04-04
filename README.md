@@ -1,10 +1,10 @@
-# ITAC Terraform Provider 
+# Intel Tiber AI Cloud Terraform Provider 
 
-This ITAC provider plugin brings the power of Hashicorp's Terraform to Intel Tiber AI Cloud (ITAC). It allows developers to model and manage their ITAC Resources through HCL IaaC (Infrastructure as a Code).
+This Intel Tiber AI Cloud provider plugin brings the power of Hashicorp's Terraform to Intel Tiber AI Cloud. It allows developers to model and manage their AI Cloud Resources through HCL IaaC (Infrastructure as a Code).
 
 Useful links:
-- [ITAC Documentation](https://staging.console.idcservice.net/docs/index.html)
-- [ITAC Provider Documentation](https://registry.terraform.io/providers/intel/intelcloud/latest/docs)
+- [Intel Tiber AI Cloud Documentation](https://console.cloud.intel.com/docs/index.html)
+- [Intel Tiber AI Cloud Provider Documentation](https://registry.terraform.io/providers/intel/intelcloud/latest/docs)
 - [Terraform Documentation](https://www.terraform.io/docs/language/index.html)
 <!-- [Terraform Provider Development](DEVELOPMENT.md) -->
 
@@ -13,9 +13,9 @@ The provider lets you declaratively define the configuration for your Intel Clou
 
 ## Contents
 
-### ITAC Provider for Terraform
+### Intel Tiber AI Cloud Provider for Terraform
   - [Requirements](#requirements)
-  - [Using the ITAC provider](#using-the-itac-provider)
+  - [Using the Intel Tiber AI Cloud provider](#using-the-Intel-Tiber-AI-Cloud-provider)
 
 
 ### Requirements
@@ -23,10 +23,10 @@ The provider lets you declaratively define the configuration for your Intel Clou
 -	[Go](https://golang.org/doc/install) v1.21 or higher (to build the provider plugin)
 - [Intel Cloud Platform](https://ai.cloud.intel.com/)
 
-### Using the ITAC provider
+### Using the Intel Tiber AI Cloud provider
 
-#### ITAC Login Credentials
-For creating resources on ITAC, it requires auth credentials. More specifically, currently it requires following `three` environment variables to be configured.
+#### Intel Tiber AI Cloud Login Credentials
+For creating resources on AI Cloud, it requires auth credentials. More specifically, currently it requires following `three` environment variables to be configured.
 
 The values for these environment variables can be created by the user using creds as a service.
 
