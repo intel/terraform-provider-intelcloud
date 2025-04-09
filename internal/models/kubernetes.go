@@ -37,13 +37,13 @@ type IKSClusterModel struct {
 var UpgradableVersionAttributes = []types.String{}
 
 type IKSStorage struct {
-	Size            types.Int64  `tfsdk:"size_in_gb"`
+	Size            types.Int64  `tfsdk:"size_in_tb"`
 	State           types.String `tfsdk:"state"`
 	StorageProvider types.String `tfsdk:"storage_provider"`
 }
 
 var IKStorageAttributes = map[string]attr.Type{
-	"size_in_gb":       types.StringType,
+	"size_in_tb":       types.StringType,
 	"state":            types.StringType,
 	"storage_provider": types.StringType,
 }

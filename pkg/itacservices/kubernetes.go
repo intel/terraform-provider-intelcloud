@@ -464,6 +464,7 @@ func (client *IDCServicesClient) CreateIKSStorage(ctx context.Context, in *IKSSt
 				if v.State == "Active" {
 					storage.Provider = v.Provider
 					storage.State = v.State
+					storage.Size = v.Size
 					return nil
 				} else if v.State == "Failed" {
 					return fmt.Errorf("file storage state failed")
