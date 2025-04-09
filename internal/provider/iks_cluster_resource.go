@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"terraform-provider-intelcloud/internal/models"
 	"terraform-provider-intelcloud/pkg/itacservices"
 
@@ -187,7 +188,8 @@ func (r *iksClusterResource) Create(ctx context.Context, req resource.CreateRequ
 			return
 		}
 
-		sizeNum, _ := strconv.ParseInt(storageResp.Size, 10, 64)
+		sizeStr := strings.Split(storageResp.Size, "TB")[0]
+		sizeNum, _ := strconv.ParseInt(sizeStr, 10, 64)
 		currV := models.IKSStorage{
 			Size:            types.Int64Value(sizeNum),
 			State:           types.StringValue(storageResp.State),
@@ -247,6 +249,19 @@ func (r *iksClusterResource) Read(ctx context.Context, req resource.ReadRequest,
 		ServiceCIDR: types.StringValue(iksClusterResp.Network.ServcieCIDR),
 	}
 	state.Network, diags = types.ObjectValueFrom(ctx, network.AttributeTypes(), network)
+
+	for _, v := range iksClusterResp.Storages {
+		sizeStr := strings.Split(v.Size, "TB")[0]
+		size, _ := strconv.ParseInt(sizeStr, 10, 64)
+
+		currV := models.IKSStorage{
+			Size:            types.Int64Value(size),
+			State:           types.StringValue(v.State),
+			StorageProvider: types.StringValue(v.Provider),
+		}
+		state.Storage = &currV
+	}
+
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -333,6 +348,7 @@ func (r *iksClusterResource) Update(ctx context.Context, req resource.UpdateRequ
 			return
 		}
 	}
+
 	// Get refreshed order value from IDC Service irrespective of whether upgrade was done or skipped
 	cluster, cloudaccount, err := r.client.GetIKSClusterByClusterUUID(ctx, state.ID.ValueString())
 	if err != nil {

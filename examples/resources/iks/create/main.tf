@@ -2,7 +2,7 @@ terraform {
   required_providers {
     intelcloud = {
       source = "intel/intelcloud"
-      version = "0.0.6"
+      version = "0.0.10"
     }
   }
 }
@@ -31,9 +31,9 @@ resource "intelcloud_iks_cluster" "cluster1" {
   availability_zone  = local.availability_zone
   kubernetes_version = "1.28"
 
-  # storage = {
-  #   size_in_gb = 30
-  # }
+  storage = {
+     size_in_tb = 30
+  }
 }
 
 resource "intelcloud_iks_node_group" "ng1" {
