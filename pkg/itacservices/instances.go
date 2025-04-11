@@ -310,6 +310,7 @@ func (client *IDCServicesClient) CreateVNetIfNotFound(ctx context.Context, regio
 	tflog.Debug(ctx, "vnets get api response", map[string]any{"retcode": retcode, "retval": vnets})
 
 	if len(vnets.Vnets) > 0 {
+		tflog.Debug(ctx, "existing vnets found")
 		return &(vnets.Vnets[0]), nil
 	}
 

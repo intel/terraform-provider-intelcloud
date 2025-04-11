@@ -244,7 +244,7 @@ func (r *computeInstanceResource) Create(ctx context.Context, req resource.Creat
 			}{
 				{
 					Name: "eth0",
-					VNet: fmt.Sprintf("%sa-default", *r.client.Region),
+					VNet: vnetResp.Metadata.Name,
 				},
 			},
 			InstanceType:        plan.Spec.InstanceType.ValueString(),

@@ -3,12 +3,12 @@ package provider
 import (
 	"context"
 	"fmt"
-	"terraform-provider-intelcloud/internal/models"
 	"terraform-provider-intelcloud/pkg/itacservices"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -19,16 +19,16 @@ var (
 
 // iksNodeGroupResourceModel maps the resource schema data.
 type iksNodeGroupResourceModel struct {
-	ClusterUUID       types.String                  `tfsdk:"cluster_uuid"`
-	ID                types.String                  `tfsdk:"id"`
-	Count             types.Int64                   `tfsdk:"node_count"`
-	Name              types.String                  `tfsdk:"name"`
-	NodeType          types.String                  `tfsdk:"node_type"`
-	IMIId             types.String                  `tfsdk:"imiid"`
-	State             types.String                  `tfsdk:"state"`
-	UserDataURL       types.String                  `tfsdk:"userdata_url"`
-	SSHPublicKeyNames []types.String                `tfsdk:"ssh_public_key_names"`
-	Interfaces        []models.NetworkInterfaceSpec `tfsdk:"interfaces"`
+	ClusterUUID       types.String   `tfsdk:"cluster_uuid"`
+	ID                types.String   `tfsdk:"id"`
+	Count             types.Int64    `tfsdk:"node_count"`
+	Name              types.String   `tfsdk:"name"`
+	NodeType          types.String   `tfsdk:"node_type"`
+	IMIId             types.String   `tfsdk:"imiid"`
+	State             types.String   `tfsdk:"state"`
+	UserDataURL       types.String   `tfsdk:"userdata_url"`
+	SSHPublicKeyNames []types.String `tfsdk:"ssh_public_key_names"`
+	Interfaces        types.List     `tfsdk:"interfaces"`
 }
 
 // NewOrderKubernetes is a helper function to simplify the provider implementation.
@@ -99,14 +99,15 @@ func (r *iksNodeGroupResource) Schema(_ context.Context, _ resource.SchemaReques
 				Required:    true,
 			},
 			"interfaces": schema.ListNestedAttribute{
-				Required: true,
+				Optional: true,
+				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
-							Required: true,
+							Computed: true,
 						},
 						"vnet": schema.StringAttribute{
-							Required: true,
+							Computed: true,
 						},
 					},
 				},
@@ -138,16 +139,24 @@ func (r *iksNodeGroupResource) Create(ctx context.Context, req resource.CreateRe
 		inArg.SSHKeyNames = append(inArg.SSHKeyNames, itacservices.SKey{Name: k.ValueString()})
 	}
 
-	for _, inf := range plan.Interfaces {
-		inArg.Interfaces = append(inArg.Interfaces,
-			struct {
-				AvailabilityZone string "json:\"availabilityzonename\""
-				VNet             string "json:\"networkinterfacevnetname\""
-			}{
-				AvailabilityZone: inf.Name.ValueString(),
-				VNet:             inf.VNet.ValueString(),
-			})
+	tflog.Info(ctx, "making a call to IDC Service to createVnetIfNotExist")
+	vnetResp, err := r.client.CreateVNetIfNotFound(ctx, *r.client.Region)
+	if err != nil || vnetResp == nil {
+		resp.Diagnostics.AddError(
+			"Error creating order",
+			"Could not create order, unexpected error: "+err.Error(),
+		)
+		return
 	}
+
+	inArg.Interfaces = append(inArg.Interfaces,
+		struct {
+			AvailabilityZone string "json:\"availabilityzonename\""
+			VNet             string "json:\"networkinterfacevnetname\""
+		}{
+			AvailabilityZone: vnetResp.Spec.AvailabilityZone,
+			VNet:             vnetResp.Metadata.Name,
+		})
 
 	nodeGroupResp, _, err := r.client.CreateIKSNodeGroup(ctx, &inArg, plan.ClusterUUID.ValueString(), false)
 	if err != nil {
