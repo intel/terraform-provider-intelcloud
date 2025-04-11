@@ -253,6 +253,8 @@ func discoverITACServiceEndpoint(region string) (string, string) {
 		return "https://client-token.api.idcservice.net", "https://us-region-3-sdk-api.cloud.intel.com"
 	case "us-region-4":
 		return "https://client-token.api.idcservice.net", "https://us-region-4-sdk-api.cloud.intel.com"
+	case "us-region-5":
+		return "https://client-token.api.idcservice.net", "https://us-region-5-sdk-api.cloud.intel.com"
 	default:
 		return "", ""
 	}

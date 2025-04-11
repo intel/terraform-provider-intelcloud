@@ -203,7 +203,7 @@ func (r *computeInstanceResource) Create(ctx context.Context, req resource.Creat
 	}
 
 	tflog.Info(ctx, "making a call to IDC Service to createVnetIfNotExist")
-	vnetResp, err := r.client.CreateVNetIfNotFound(ctx)
+	vnetResp, err := r.client.CreateVNetIfNotFound(ctx, *r.client.Region)
 	if err != nil || vnetResp == nil {
 		resp.Diagnostics.AddError(
 			"Error creating order",
@@ -244,7 +244,7 @@ func (r *computeInstanceResource) Create(ctx context.Context, req resource.Creat
 			}{
 				{
 					Name: "eth0",
-					VNet: fmt.Sprintf("%sa-default", *r.client.Region),
+					VNet: vnetResp.Metadata.Name,
 				},
 			},
 			InstanceType:        plan.Spec.InstanceType.ValueString(),
