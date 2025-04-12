@@ -65,15 +65,15 @@ func (m ClusterNetwork) AttributeTypes() map[string]attr.Type {
 }
 
 type NodeGroup struct {
-	ID                types.String           `tfsdk:"id"`
-	Count             types.Int64            `tfsdk:"ng_count"`
-	Name              types.String           `tfsdk:"name"`
-	InstanceType      types.String           `tfsdk:"instance_type"`
-	IMIId             types.String           `tfsdk:"imiid"`
-	State             types.String           `tfsdk:"state"`
-	UserDataURL       types.String           `tfsdk:"userdata_url"`
-	SSHPublicKeyNames []types.String         `tfsdk:"ssh_public_key_names"`
-	Interfaces        []NetworkInterfaceSpec `tfsdk:"interfaces"`
+	ID                types.String   `tfsdk:"id"`
+	Count             types.Int64    `tfsdk:"ng_count"`
+	Name              types.String   `tfsdk:"name"`
+	InstanceType      types.String   `tfsdk:"instance_type"`
+	IMIId             types.String   `tfsdk:"imiid"`
+	State             types.String   `tfsdk:"state"`
+	UserDataURL       types.String   `tfsdk:"userdata_url"`
+	SSHPublicKeyNames []types.String `tfsdk:"ssh_public_key_names"`
+	Interfaces        types.List     `tfsdk:"vnets"`
 }
 
 var NodeGroupAttributes = map[string]attr.Type{
@@ -84,6 +84,11 @@ var NodeGroupAttributes = map[string]attr.Type{
 	"imiid":         types.StringType,
 	"state":         types.StringType,
 	"userdata_url":  types.StringType,
+}
+
+var VnetAttributes = map[string]attr.Type{
+	"availabilityzonename":     types.StringType,
+	"networkinterfacevnetname": types.StringType,
 }
 
 type IKSLoadBalancer struct {

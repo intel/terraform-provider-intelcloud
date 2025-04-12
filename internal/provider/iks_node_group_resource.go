@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"terraform-provider-intelcloud/internal/models"
 	"terraform-provider-intelcloud/pkg/itacservices"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -28,7 +29,7 @@ type iksNodeGroupResourceModel struct {
 	State             types.String   `tfsdk:"state"`
 	UserDataURL       types.String   `tfsdk:"userdata_url"`
 	SSHPublicKeyNames []types.String `tfsdk:"ssh_public_key_names"`
-	Interfaces        types.List     `tfsdk:"interfaces"`
+	Vnets             types.List     `tfsdk:"vnets"`
 }
 
 // NewOrderKubernetes is a helper function to simplify the provider implementation.
@@ -98,15 +99,15 @@ func (r *iksNodeGroupResource) Schema(_ context.Context, _ resource.SchemaReques
 				ElementType: types.StringType,
 				Required:    true,
 			},
-			"interfaces": schema.ListNestedAttribute{
+			"vnets": schema.ListNestedAttribute{
 				Optional: true,
 				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
+						"availabilityzonename": schema.StringAttribute{
 							Computed: true,
 						},
-						"vnet": schema.StringAttribute{
+						"networkinterfacevnetname": schema.StringAttribute{
 							Computed: true,
 						},
 					},
@@ -149,13 +150,10 @@ func (r *iksNodeGroupResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	inArg.Interfaces = append(inArg.Interfaces,
-		struct {
-			AvailabilityZone string "json:\"availabilityzonename\""
-			VNet             string "json:\"networkinterfacevnetname\""
-		}{
-			AvailabilityZone: vnetResp.Spec.AvailabilityZone,
-			VNet:             vnetResp.Metadata.Name,
+	inArg.Vnets = append(inArg.Vnets,
+		itacservices.Vnet{
+			AvailabilityZoneName:     vnetResp.Spec.AvailabilityZone,
+			NetworkInterfaceVnetName: vnetResp.Metadata.Name,
 		})
 
 	nodeGroupResp, _, err := r.client.CreateIKSNodeGroup(ctx, &inArg, plan.ClusterUUID.ValueString(), false)
@@ -170,6 +168,21 @@ func (r *iksNodeGroupResource) Create(ctx context.Context, req resource.CreateRe
 	plan.ID = types.StringValue(nodeGroupResp.ID)
 	plan.IMIId = types.StringValue(nodeGroupResp.IMIID)
 	plan.State = types.StringValue(nodeGroupResp.State)
+	vnets := []models.NetworkInterfaceSpec{}
+	for _, iface := range nodeGroupResp.Interfaces {
+		v := models.NetworkInterfaceSpec{
+			AvailabilityZoneName:     types.StringValue(iface.AvailabilityZoneName),
+			NetworkInterfaceVnetName: types.StringValue(iface.NetworkInterfaceVnetName),
+		}
+		vnets = append(vnets, v)
+	}
+
+	vnetObj, diags := types.ListValueFrom(ctx, types.ObjectType{}.WithAttributeTypes(models.VnetAttributes), vnets)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	plan.Vnets = vnetObj
 
 	// Set state to fully populated data
 	diags = resp.State.Set(ctx, plan)
@@ -201,6 +214,22 @@ func (r *iksNodeGroupResource) Read(ctx context.Context, req resource.ReadReques
 
 	state.IMIId = types.StringValue(ngState.IMIID)
 	state.State = types.StringValue(ngState.State)
+
+	vnets := []models.NetworkInterfaceSpec{}
+	for _, i := range ngState.Interfaces {
+		v := models.NetworkInterfaceSpec{
+			AvailabilityZoneName:     types.StringValue(i.AvailabilityZoneName),
+			NetworkInterfaceVnetName: types.StringValue(i.NetworkInterfaceVnetName),
+		}
+		vnets = append(vnets, v)
+	}
+
+	vnetObj, diags := types.ListValueFrom(ctx, types.ObjectType{}.WithAttributeTypes(models.VnetAttributes), vnets)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	state.Vnets = vnetObj
 
 	// Set state to fully populated data
 	diags = resp.State.Set(ctx, &state)
