@@ -107,13 +107,14 @@ type VNet struct {
 
 type VNetCreateRequest struct {
 	Metadata struct {
-		Name string `json:"name"`
+		Name         string `json:"name"`
+		CloudAccount string `json:"cloudAccount"`
 	} `json:"metadata"`
 	Spec struct {
 		AvailabilityZone string `json:"availabilityZone"`
 		Region           string `json:"region"`
-		PrefixLength     int64  `json:"prefixLength"`
-	}
+		PrefixLength     int32  `json:"prefixLength"`
+	} `json:"spec"`
 }
 
 func (client *IDCServicesClient) GetInstances(ctx context.Context) (*Instances, error) {
@@ -278,7 +279,7 @@ func (client *IDCServicesClient) DeleteInstanceByResourceId(ctx context.Context,
 	return nil
 }
 
-func (client *IDCServicesClient) CreateVNetIfNotFound(ctx context.Context) (*VNet, error) {
+func (client *IDCServicesClient) CreateVNetIfNotFound(ctx context.Context, region string) (*VNet, error) {
 
 	params := struct {
 		Host         string
@@ -309,24 +310,28 @@ func (client *IDCServicesClient) CreateVNetIfNotFound(ctx context.Context) (*VNe
 	tflog.Debug(ctx, "vnets get api response", map[string]any{"retcode": retcode, "retval": vnets})
 
 	if len(vnets.Vnets) > 0 {
+		tflog.Debug(ctx, "existing vnets found")
 		return &(vnets.Vnets[0]), nil
 	}
 
 	tflog.Debug(ctx, "vnets not found, creating a new")
 
+	availabilityZone, vnetName := common.GetAvailabiltyZoneAndVnet(region)
 	inArgs := VNetCreateRequest{
 		Metadata: struct {
-			Name string "json:\"name\""
+			Name         string "json:\"name\""
+			CloudAccount string "json:\"cloudAccount\""
 		}{
-			Name: "us-staging-1a-default",
+			Name:         vnetName,
+			CloudAccount: *client.Cloudaccount,
 		},
 		Spec: struct {
 			AvailabilityZone string "json:\"availabilityZone\""
 			Region           string "json:\"region\""
-			PrefixLength     int64  "json:\"prefixLength\""
+			PrefixLength     int32  "json:\"prefixLength\""
 		}{
-			AvailabilityZone: "us-staging-1a",
-			Region:           "us-staging-1",
+			AvailabilityZone: availabilityZone,
+			Region:           region,
 			PrefixLength:     24,
 		},
 	}
@@ -345,7 +350,7 @@ func (client *IDCServicesClient) CreateVNetIfNotFound(ctx context.Context) (*VNe
 	retcode, retval, err = common.MakePOSTAPICall(ctx, parsedURL, *client.Apitoken, payload)
 
 	if err != nil || retcode != http.StatusOK {
-		return nil, fmt.Errorf("error reading vnet create response")
+		return nil, fmt.Errorf("error reading vnet create response: %v", err)
 	}
 
 	vnet := VNet{}

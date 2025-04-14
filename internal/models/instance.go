@@ -28,8 +28,8 @@ type InstanceSpec struct {
 }
 
 type NetworkInterfaceSpec struct {
-	Name types.String `tfsdk:"name"`
-	VNet types.String `tfsdk:"vnet"`
+	AvailabilityZoneName     types.String `tfsdk:"availabilityzonename"`
+	NetworkInterfaceVnetName types.String `tfsdk:"networkinterfacevnetname"`
 }
 
 type NetworkInterface struct {

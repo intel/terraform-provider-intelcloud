@@ -79,6 +79,7 @@ type NodeGroup struct {
 	NetworkInterfaceName string `json:"networkinterfacename"`
 	IMIID                string `json:"imiid"`
 	UserDataURL          string `json:"userdataurl"`
+	Interfaces           []Vnet `json:"vnets"`
 }
 
 type SKey struct {
@@ -98,10 +99,12 @@ type IKSNodeGroupCreateRequest struct {
 	InstanceTypeId string `json:"instancetypeid"`
 	SSHKeyNames    []SKey `json:"sshkeyname"`
 	UserDataURL    string `json:"userdataurl"`
-	Interfaces     []struct {
-		AvailabilityZone string `json:"availabilityzonename"`
-		VNet             string `json:"networkinterfacevnetname"`
-	} `json:"vnets"`
+	Vnets          []Vnet `json:"vnets"`
+}
+
+type Vnet struct {
+	AvailabilityZoneName     string `json:"availabilityzonename"`
+	NetworkInterfaceVnetName string `json:"networkinterfacevnetname"`
 }
 
 type IKSCreateRequest struct {

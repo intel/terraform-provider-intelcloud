@@ -50,3 +50,11 @@ func mapAPIErrorMessage(retval []byte) error {
 	}
 	return fmt.Errorf("%v", apiError.Message)
 }
+
+func GetAvailabiltyZoneAndVnet(region string) (string, string) {
+	availabilityZone := fmt.Sprintf("%sa", region)
+	vnetName := fmt.Sprintf("%s-default", availabilityZone)
+
+	return availabilityZone, vnetName
+
+}

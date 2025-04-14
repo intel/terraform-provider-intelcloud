@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -19,16 +20,16 @@ var (
 
 // iksNodeGroupResourceModel maps the resource schema data.
 type iksNodeGroupResourceModel struct {
-	ClusterUUID       types.String                  `tfsdk:"cluster_uuid"`
-	ID                types.String                  `tfsdk:"id"`
-	Count             types.Int64                   `tfsdk:"node_count"`
-	Name              types.String                  `tfsdk:"name"`
-	NodeType          types.String                  `tfsdk:"node_type"`
-	IMIId             types.String                  `tfsdk:"imiid"`
-	State             types.String                  `tfsdk:"state"`
-	UserDataURL       types.String                  `tfsdk:"userdata_url"`
-	SSHPublicKeyNames []types.String                `tfsdk:"ssh_public_key_names"`
-	Interfaces        []models.NetworkInterfaceSpec `tfsdk:"interfaces"`
+	ClusterUUID       types.String   `tfsdk:"cluster_uuid"`
+	ID                types.String   `tfsdk:"id"`
+	Count             types.Int64    `tfsdk:"node_count"`
+	Name              types.String   `tfsdk:"name"`
+	NodeType          types.String   `tfsdk:"node_type"`
+	IMIId             types.String   `tfsdk:"imiid"`
+	State             types.String   `tfsdk:"state"`
+	UserDataURL       types.String   `tfsdk:"userdata_url"`
+	SSHPublicKeyNames []types.String `tfsdk:"ssh_public_key_names"`
+	Vnets             types.List     `tfsdk:"vnets"`
 }
 
 // NewOrderKubernetes is a helper function to simplify the provider implementation.
@@ -98,15 +99,16 @@ func (r *iksNodeGroupResource) Schema(_ context.Context, _ resource.SchemaReques
 				ElementType: types.StringType,
 				Required:    true,
 			},
-			"interfaces": schema.ListNestedAttribute{
-				Required: true,
+			"vnets": schema.ListNestedAttribute{
+				Optional: true,
+				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
-							Required: true,
+						"availabilityzonename": schema.StringAttribute{
+							Computed: true,
 						},
-						"vnet": schema.StringAttribute{
-							Required: true,
+						"networkinterfacevnetname": schema.StringAttribute{
+							Computed: true,
 						},
 					},
 				},
@@ -138,16 +140,21 @@ func (r *iksNodeGroupResource) Create(ctx context.Context, req resource.CreateRe
 		inArg.SSHKeyNames = append(inArg.SSHKeyNames, itacservices.SKey{Name: k.ValueString()})
 	}
 
-	for _, inf := range plan.Interfaces {
-		inArg.Interfaces = append(inArg.Interfaces,
-			struct {
-				AvailabilityZone string "json:\"availabilityzonename\""
-				VNet             string "json:\"networkinterfacevnetname\""
-			}{
-				AvailabilityZone: inf.Name.ValueString(),
-				VNet:             inf.VNet.ValueString(),
-			})
+	tflog.Info(ctx, "making a call to IDC Service to createVnetIfNotExist")
+	vnetResp, err := r.client.CreateVNetIfNotFound(ctx, *r.client.Region)
+	if err != nil || vnetResp == nil {
+		resp.Diagnostics.AddError(
+			"Error creating order",
+			"Could not create order, unexpected error: "+err.Error(),
+		)
+		return
 	}
+
+	inArg.Vnets = append(inArg.Vnets,
+		itacservices.Vnet{
+			AvailabilityZoneName:     vnetResp.Spec.AvailabilityZone,
+			NetworkInterfaceVnetName: vnetResp.Metadata.Name,
+		})
 
 	nodeGroupResp, _, err := r.client.CreateIKSNodeGroup(ctx, &inArg, plan.ClusterUUID.ValueString(), false)
 	if err != nil {
@@ -161,6 +168,21 @@ func (r *iksNodeGroupResource) Create(ctx context.Context, req resource.CreateRe
 	plan.ID = types.StringValue(nodeGroupResp.ID)
 	plan.IMIId = types.StringValue(nodeGroupResp.IMIID)
 	plan.State = types.StringValue(nodeGroupResp.State)
+	vnets := []models.NetworkInterfaceSpec{}
+	for _, iface := range nodeGroupResp.Interfaces {
+		v := models.NetworkInterfaceSpec{
+			AvailabilityZoneName:     types.StringValue(iface.AvailabilityZoneName),
+			NetworkInterfaceVnetName: types.StringValue(iface.NetworkInterfaceVnetName),
+		}
+		vnets = append(vnets, v)
+	}
+
+	vnetObj, diags := types.ListValueFrom(ctx, types.ObjectType{}.WithAttributeTypes(models.VnetAttributes), vnets)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	plan.Vnets = vnetObj
 
 	// Set state to fully populated data
 	diags = resp.State.Set(ctx, plan)
@@ -192,6 +214,22 @@ func (r *iksNodeGroupResource) Read(ctx context.Context, req resource.ReadReques
 
 	state.IMIId = types.StringValue(ngState.IMIID)
 	state.State = types.StringValue(ngState.State)
+
+	vnets := []models.NetworkInterfaceSpec{}
+	for _, i := range ngState.Interfaces {
+		v := models.NetworkInterfaceSpec{
+			AvailabilityZoneName:     types.StringValue(i.AvailabilityZoneName),
+			NetworkInterfaceVnetName: types.StringValue(i.NetworkInterfaceVnetName),
+		}
+		vnets = append(vnets, v)
+	}
+
+	vnetObj, diags := types.ListValueFrom(ctx, types.ObjectType{}.WithAttributeTypes(models.VnetAttributes), vnets)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	state.Vnets = vnetObj
 
 	// Set state to fully populated data
 	diags = resp.State.Set(ctx, &state)
