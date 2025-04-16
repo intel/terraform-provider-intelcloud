@@ -2,14 +2,14 @@ terraform {
   required_providers {
     intelcloud = {
       source = "intel/intelcloud"
-      version = "0.0.6"
+      version = "0.0.11"
     }
   }
 }
 
 
 provider "intelcloud" {
-  region = "us-region-2"
+  region = var.idc_region
 }
 
 data "intelcloud_machine_images" "image" {
@@ -17,7 +17,7 @@ data "intelcloud_machine_images" "image" {
   filters = [
     {
       name   = "name"
-      values = ["ubuntu-2204-jammy"]
+      values = [var.machine_image]
     }
   ]
 }
@@ -25,9 +25,9 @@ data "intelcloud_machine_images" "image" {
 resource "intelcloud_instance" "example" {
   name = "tf-demo-instance"
   spec = {
-    instance_type        = "vm-spr-sml"
-    machine_image        = data.intelcloud_machine_images.image.result.name
-    ssh_public_key_names = ["test-key"]
+    instance_type        = var.instance_type 
+    machine_image        = var.machine_image 
+    ssh_public_key_names = [var.ssh_public_key_names]
   }
 }
 
