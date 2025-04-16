@@ -231,7 +231,7 @@ func (client *IDCServicesClient) CreateIKSCluster(ctx context.Context, in *IKSCr
 		}
 	} else {
 		backoffTimer := retry.NewConstant(5 * time.Second)
-		backoffTimer = retry.WithMaxDuration(1800*time.Second, backoffTimer)
+		backoffTimer = retry.WithMaxDuration(3000*time.Second, backoffTimer)
 
 		if err := retry.Do(ctx, backoffTimer, func(_ context.Context) error {
 			cluster, _, err = client.GetIKSClusterByClusterUUID(ctx, cluster.ResourceId)
@@ -359,7 +359,7 @@ func (client *IDCServicesClient) CreateIKSNodeGroup(ctx context.Context, in *IKS
 	}
 
 	backoffTimer := retry.NewConstant(5 * time.Second)
-	backoffTimer = retry.WithMaxDuration(3000*time.Second, backoffTimer)
+	backoffTimer = retry.WithMaxDuration(9000*time.Second, backoffTimer)
 
 	if err := retry.Do(ctx, backoffTimer, func(_ context.Context) error {
 		ng, _, err = client.GetIKSNodeGroupByID(ctx, clusterUUID, ng.ID)
