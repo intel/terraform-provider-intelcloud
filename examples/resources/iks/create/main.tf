@@ -9,7 +9,7 @@ terraform {
 }
 
 provider "intelcloud" {
-  region = var.idc_region 
+  region = var.idc_region
 }
 
 provider "random" {
@@ -20,8 +20,8 @@ provider "random" {
 resource "random_pet" "prefix" {}
 
 locals {
-  name     = "${random_pet.prefix.id}"
-  availability_zone = var.idc_availability_zone 
+  name              = random_pet.prefix.id
+  availability_zone = var.idc_availability_zone
   tags = {
     environment = "demo"
   }
@@ -33,7 +33,11 @@ resource "intelcloud_iks_cluster" "cluster1" {
   kubernetes_version = var.kubernetes_version
 
   storage = {
-     size_in_tb = var.size_in_tb
+    size_in_tb = var.size_in_tb
+  }
+  # specify custom timeouts for the resource
+  timeouts {
+    resource_timeout = "30m"
   }
 }
 
@@ -45,11 +49,14 @@ resource "intelcloud_iks_node_group" "ng1" {
   node_type            = var.node_type
   userdata_url         = ""
   ssh_public_key_names = var.ssh_public_key_names
+  timeouts {
+    resource_timeout = "15m"
+  }
 }
 
 # Output the details of the created IKS cluster
 output "iks_order" {
-	value = intelcloud_iks_cluster.cluster1
+  value = intelcloud_iks_cluster.cluster1
 }
 
 #################### Loadbalancer is not supported for now #####################

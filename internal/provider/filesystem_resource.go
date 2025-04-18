@@ -37,6 +37,7 @@ type filesystemResourceModel struct {
 	Status           types.String           `tfsdk:"status"`
 	ClusterInfo      types.Object           `tfsdk:"cluster_info"`
 	AccessInfo       types.Object           `tfsdk:"access_info"`
+	Timeouts         *timeoutsModel         `tfsdk:"timeouts"`
 }
 
 // NewFilesystemResource is a helper function to simplify the provider implementation.
@@ -133,6 +134,18 @@ func (r *filesystemResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Computed: true,
 			},
 		},
+		Blocks: map[string]schema.Block{
+			"timeouts": schema.SingleNestedBlock{
+				Attributes: map[string]schema.Attribute{
+					"resource_timeout": schema.StringAttribute{
+						Optional:    true,
+						Computed:    true,
+						Description: "Timeout for resource operation, supports 1s, 2m, 3h etc.",
+						Default:     stringdefault.StaticString(FileSystemResourceTimeout),
+					},
+				},
+			},
+		},
 	}
 
 }
@@ -147,6 +160,15 @@ func (r *filesystemResource) Create(ctx context.Context, req resource.CreateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// use timeouts if requested by the user
+	createTimeout, err := plan.Timeouts.GetTimeouts(FilesystemResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse create timeout: "+err.Error())
+	}
+	// Use the timeout context
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	inArg := itacservices.FilesystemCreateRequest{
 		Metadata: struct {
@@ -196,6 +218,9 @@ func (r *filesystemResource) Create(ctx context.Context, req resource.CreateRequ
 
 	plan.Spec.FilesystemType = types.StringValue(fsResp.Spec.FilesystemType)
 	plan.Spec.StorageClass = types.StringValue(fsResp.Spec.StorageClass)
+	sizeStr := strings.Split(fsResp.Spec.Request.Size, "TB")[0]
+	size, _ := strconv.ParseInt(sizeStr, 10, 64)
+	plan.Spec.Size = types.Int64Value(size)
 	clusterInfoMap := models.FilesystemClusteModel{
 		ClusterAddress: types.StringValue(fsResp.Status.Mount.ClusterAddr),
 		ClusterVersion: types.StringValue(fsResp.Status.Mount.ClusterVersion),
@@ -232,11 +257,21 @@ func (r *filesystemResource) Create(ctx context.Context, req resource.CreateRequ
 func (r *filesystemResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	// Get current state
 	var orig filesystemResourceModel
+
 	diags := req.State.Get(ctx, &orig)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// use timeouts if requested by the user
+	readTimeout, err := orig.Timeouts.GetTimeouts(FilesystemResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse read timeout: "+err.Error())
+	}
+	// Use the timeout context
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
 
 	// Get refreshed order value from IDC Service
 	filesystem, err := r.client.GetFilesystemByResourceId(ctx, orig.ID.ValueString())
@@ -287,6 +322,15 @@ func (r *filesystemResource) Update(ctx context.Context, req resource.UpdateRequ
 	if !plan.Spec.Size.Equal(state.Spec.Size) {
 		tflog.Info(ctx, "Detected change in filesystem spec, updating resource")
 
+		// use timeouts if requested by the user
+		updateTimeout, err := plan.Timeouts.GetTimeouts(FilesystemResourceName)
+		if err != nil {
+			resp.Diagnostics.AddError("Invalid timeout", "Could not parse update timeout: "+err.Error())
+		}
+		// Use the timeout context
+		ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+		defer cancel()
+
 		inArg := itacservices.FilesystemUpdateRequest{
 			Metadata: struct {
 				Name string "json:\"name\""
@@ -309,7 +353,7 @@ func (r *filesystemResource) Update(ctx context.Context, req resource.UpdateRequ
 		}
 
 		tflog.Info(ctx, "making a call to IDC Service for update filesystem", map[string]any{"Payload": inArg})
-		err := r.client.UpdateFilesystem(ctx, &inArg)
+		err = r.client.UpdateFilesystem(ctx, &inArg)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error creating order",
@@ -337,6 +381,7 @@ func (r *filesystemResource) Update(ctx context.Context, req resource.UpdateRequ
 			return
 		}
 		currState.Spec.Size = plan.Spec.Size
+
 		// Set refreshed state
 		diags = resp.State.Set(ctx, currState)
 		resp.Diagnostics.Append(diags...)
@@ -356,14 +401,22 @@ func (r *filesystemResource) ImportState(ctx context.Context, req resource.Impor
 func (r *filesystemResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// Get current state
 	var state filesystemResourceModel
+
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	deleteTimeout, err := state.Timeouts.GetTimeouts(FilesystemResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse delete timeout: "+err.Error())
+	}
+	// Use the timeout context
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
 
 	// Delete the order from IDC Services
-	err := r.client.DeleteFilesystemByResourceId(ctx, state.ID.ValueString())
+	err = r.client.DeleteFilesystemByResourceId(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting IDC Instance resource",

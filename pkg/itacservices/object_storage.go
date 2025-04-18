@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"terraform-provider-intelcloud/pkg/itacservices/common"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	retry "github.com/sethvargo/go-retry"
@@ -127,8 +126,7 @@ func (client *IDCServicesClient) CreateObjectStorageBucket(ctx context.Context, 
 		return nil, fmt.Errorf("error parsing bucket response")
 	}
 
-	backoffTimer := retry.NewConstant(5 * time.Second)
-	backoffTimer = retry.WithMaxDuration(300*time.Second, backoffTimer)
+	backoffTimer := retry.NewConstant(common.DefaultRetryInterval)
 
 	if err := retry.Do(ctx, backoffTimer, func(_ context.Context) error {
 		bucket, err = client.GetObjectBucketByResourceId(ctx, bucket.Metadata.ResourceId)

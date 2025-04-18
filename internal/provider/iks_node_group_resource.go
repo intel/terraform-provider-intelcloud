@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -30,6 +31,7 @@ type iksNodeGroupResourceModel struct {
 	UserDataURL       types.String   `tfsdk:"userdata_url"`
 	SSHPublicKeyNames []types.String `tfsdk:"ssh_public_key_names"`
 	Vnets             types.List     `tfsdk:"vnets"`
+	Timeouts          *timeoutsModel `tfsdk:"timeouts"`
 }
 
 // NewOrderKubernetes is a helper function to simplify the provider implementation.
@@ -114,6 +116,18 @@ func (r *iksNodeGroupResource) Schema(_ context.Context, _ resource.SchemaReques
 				},
 			},
 		},
+		Blocks: map[string]schema.Block{
+			"timeouts": schema.SingleNestedBlock{
+				Attributes: map[string]schema.Attribute{
+					"resource_timeout": schema.StringAttribute{
+						Optional:    true,
+						Computed:    true,
+						Description: "Timeout for nodegroup resource operations",
+						Default:     stringdefault.StaticString(IKSNodegroupResourceName),
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -127,6 +141,15 @@ func (r *iksNodeGroupResource) Create(ctx context.Context, req resource.CreateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// use timeouts if requested by the user
+	createTimeout, err := plan.Timeouts.GetTimeouts(IKSNodegroupResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse create timeout: "+err.Error())
+	}
+	// Use the timeout context
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	inArg := itacservices.IKSNodeGroupCreateRequest{
 		Name:           plan.Name.ValueString(),
@@ -196,11 +219,21 @@ func (r *iksNodeGroupResource) Create(ctx context.Context, req resource.CreateRe
 func (r *iksNodeGroupResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	// Get current state
 	var state iksNodeGroupResourceModel
+
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// use timeouts if requested by the user
+	readTimeout, err := state.Timeouts.GetTimeouts(IKSNodegroupResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse read timeout: "+err.Error())
+	}
+	// Use the timeout context
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
 
 	// Get refreshed order value from IDC Service
 	ngState, _, err := r.client.GetIKSNodeGroupByID(ctx, state.ClusterUUID.ValueString(), state.ID.ValueString())
@@ -248,14 +281,24 @@ func (r *iksNodeGroupResource) Update(ctx context.Context, req resource.UpdateRe
 func (r *iksNodeGroupResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// Get current state
 	var state iksNodeGroupResourceModel
+
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	// use timeouts if requested by the user
+	deleteTimeout, err := state.Timeouts.GetTimeouts(IKSNodegroupResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse delete timeout: "+err.Error())
+	}
+	// Use the timeout context
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
+
 	// Delete the order from IDC Services
-	err := r.client.DeleteIKSNodeGroup(ctx, state.ClusterUUID.ValueString(), state.ID.ValueString())
+	err = r.client.DeleteIKSNodeGroup(ctx, state.ClusterUUID.ValueString(), state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting IDC IKS node group resource",

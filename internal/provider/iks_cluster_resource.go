@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -34,6 +35,7 @@ type iksClusterResourceModel struct {
 	Network          types.Object `tfsdk:"network"`
 	UpgardeAvailable types.Bool   `tfsdk:"upgrade_available"`
 	// UpgradableVersions []types.String `tfsdk:"upgrade_k8s_versions_available"`
+	Timeouts *timeoutsModel `tfsdk:"timeouts"`
 
 	Storage *models.IKSStorage `tfsdk:"storage"`
 }
@@ -123,6 +125,18 @@ func (r *iksClusterResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			// 	Computed:    true,
 			// },
 		},
+		Blocks: map[string]schema.Block{
+			"timeouts": schema.SingleNestedBlock{
+				Attributes: map[string]schema.Attribute{
+					"resource_timeout": schema.StringAttribute{
+						Optional:    true,
+						Computed:    true,
+						Description: "Timeout for cluster resource operations",
+						Default:     stringdefault.StaticString(IKSClusterResourceTimeout),
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -136,6 +150,15 @@ func (r *iksClusterResource) Create(ctx context.Context, req resource.CreateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// use timeouts if requested by the user
+	createTimeout, err := plan.Timeouts.GetTimeouts(IKSClusterResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse create timeout: "+err.Error())
+	}
+	// Use the timeout context
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	inArg := itacservices.IKSCreateRequest{
 		Name:         plan.Name.ValueString(),
@@ -217,11 +240,21 @@ func (r *iksClusterResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	// Get current state
 	var state iksClusterResourceModel
+
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// use timeouts if requested by the user
+	readTimeout, err := state.Timeouts.GetTimeouts(IKSClusterResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse read timeout: "+err.Error())
+	}
+	// Use the timeout context
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
 
 	iksClusterResp, cloudaccount, err := r.client.GetIKSClusterByClusterUUID(ctx, state.ID.ValueString())
 	if err != nil {
@@ -331,6 +364,15 @@ func (r *iksClusterResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	// use timeouts if requested by the user
+	updateTimeout, err := state.Timeouts.GetTimeouts(IKSClusterResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse update timeout: "+err.Error())
+	}
+	// Use the timeout context
+	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
+
 	if !plan.K8sversion.Equal(state.K8sversion) {
 		tflog.Info(ctx, "Detected change in iks cluster spec for k8s version, updating cluster",
 			map[string]any{"current version ": state.K8sversion.ValueString(), "new version": plan.K8sversion.ValueString()})
@@ -401,14 +443,23 @@ func (r *iksClusterResource) ImportState(ctx context.Context, req resource.Impor
 func (r *iksClusterResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// Get current state
 	var state iksClusterResourceModel
+
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	// use timeouts if requested by the user
+	deleteTimeout, err := state.Timeouts.GetTimeouts(IKSClusterResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse delete timeout: "+err.Error())
+	}
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
+
 	// Delete the order from IDC Services
-	err := r.client.DeleteIKSCluster(ctx, state.ID.ValueString())
+	err = r.client.DeleteIKSCluster(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting IDC IKS Cluster resource",

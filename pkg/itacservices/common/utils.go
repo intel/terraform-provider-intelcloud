@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"text/template"
+	"time"
 )
 
 type APIError struct {
@@ -13,6 +14,10 @@ type APIError struct {
 	Message string        `json:"message"`
 	Details []interface{} `json:"details"`
 }
+
+const (
+	DefaultRetryInterval = time.Duration(4 * time.Second)
+)
 
 // ParseString parses the given template string with the provided data.
 func ParseString(templateString string, data interface{}) (string, error) {

@@ -358,8 +358,7 @@ func (client *IDCServicesClient) CreateIKSNodeGroup(ctx context.Context, in *IKS
 		return nil, nil, fmt.Errorf("error parsing node group response")
 	}
 
-	backoffTimer := retry.NewConstant(5 * time.Second)
-	backoffTimer = retry.WithMaxDuration(9000*time.Second, backoffTimer)
+	backoffTimer := retry.NewConstant(common.DefaultRetryInterval)
 
 	if err := retry.Do(ctx, backoffTimer, func(_ context.Context) error {
 		ng, _, err = client.GetIKSNodeGroupByID(ctx, clusterUUID, ng.ID)
@@ -454,8 +453,7 @@ func (client *IDCServicesClient) CreateIKSStorage(ctx context.Context, in *IKSSt
 		return nil, nil, fmt.Errorf("error parsing node group response")
 	}
 
-	backoffTimer := retry.NewConstant(5 * time.Second)
-	backoffTimer = retry.WithMaxDuration(3000*time.Second, backoffTimer)
+	backoffTimer := retry.NewConstant(common.DefaultRetryInterval)
 
 	if err := retry.Do(ctx, backoffTimer, func(_ context.Context) error {
 		iksCluster, _, err := client.GetIKSClusterByClusterUUID(ctx, clusterUUID)

@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"terraform-provider-intelcloud/internal/models"
 	"terraform-provider-intelcloud/pkg/itacservices"
@@ -14,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -36,6 +38,7 @@ type computeInstanceResourceModel struct {
 	Interfaces       types.List           `tfsdk:"interfaces"`
 	SSHProxy         types.Object         `tfsdk:"ssh_proxy"`
 	AccessInfo       types.Object         `tfsdk:"access_info"`
+	Timeouts         *timeoutsModel       `tfsdk:"timeouts"`
 }
 
 // NewOrderFilesystem is a helper function to simplify the provider implementation.
@@ -188,6 +191,18 @@ func (r *computeInstanceResource) Schema(_ context.Context, _ resource.SchemaReq
 				Computed: true,
 			},
 		},
+		Blocks: map[string]schema.Block{
+			"timeouts": schema.SingleNestedBlock{
+				Attributes: map[string]schema.Attribute{
+					"resource_timeout": schema.StringAttribute{
+						Optional:    true,
+						Computed:    true,
+						Description: "Timeout for instance resource operations",
+						Default:     stringdefault.StaticString(InstanceResourceTimeout),
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -201,6 +216,16 @@ func (r *computeInstanceResource) Create(ctx context.Context, req resource.Creat
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// use timeouts if requested by the user
+	createTimeout, err := plan.Timeouts.GetTimeouts(InstanceResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse create timeout: "+err.Error())
+	}
+
+	// Use the timeout context
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	tflog.Info(ctx, "making a call to IDC Service to createVnetIfNotExist")
 	vnetResp, err := r.client.CreateVNetIfNotFound(ctx, *r.client.Region)
@@ -319,6 +344,9 @@ func (r *computeInstanceResource) Create(ctx context.Context, req resource.Creat
 	// Set quick connect URL if required
 	plan.Spec.QuickConnectUrl = types.StringValue(r.getQuickConnectUrl(plan.Spec.QuickConnectEnabled, instResp))
 
+	// Ensure timeout block is preserved
+	//plan.SetTimeout()
+
 	// Set state to fully populated data
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
@@ -332,11 +360,24 @@ func (r *computeInstanceResource) Create(ctx context.Context, req resource.Creat
 func (r *computeInstanceResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	// Get current state
 	var state computeInstanceResourceModel
+	var readTimeout time.Duration
+	var err error
+
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// use timeouts if requested by the user
+	readTimeout, err = state.Timeouts.GetTimeouts(InstanceResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse read timeout: "+err.Error())
+	}
+
+	// Use the timeout context
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
 
 	// Get refreshed order value from IDC Service
 	instance, err := r.client.GetInstanceByResourceId(ctx, state.ID.ValueString())
@@ -438,14 +479,26 @@ func (r *computeInstanceResource) ImportState(ctx context.Context, req resource.
 func (r *computeInstanceResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// Get current state
 	var state computeInstanceResourceModel
+	var deleteTimeout time.Duration
+	var err error
+
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	// use timeouts if requested by the user
+	deleteTimeout, err = state.Timeouts.GetTimeouts(InstanceResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse delete timeout: "+err.Error())
+	}
+	// Use the timeout context
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
+
 	// Delete the order from IDC Services
-	err := r.client.DeleteInstanceByResourceId(ctx, state.ID.ValueString())
+	err = r.client.DeleteInstanceByResourceId(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting IDC Filesystem resource",
