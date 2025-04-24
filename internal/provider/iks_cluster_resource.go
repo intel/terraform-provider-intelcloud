@@ -409,21 +409,8 @@ func (r *iksClusterResource) Update(ctx context.Context, req resource.UpdateRequ
 		)
 		return
 	}
-
-	// Set refreshed state
-	diags = resp.State.Set(ctx, currState)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	currState, err = refreshIKSCLusterResourceModel(ctx, cluster, cloudaccount)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading IKS cluster resource",
-			"Could not read IKS cluster resource ID "+plan.ID.ValueString()+": "+err.Error(),
-		)
-		return
-	}
+	// set timeout again for consistency
+	currState.Timeouts = plan.Timeouts
 
 	// Set refreshed state
 	diags = resp.State.Set(ctx, currState)
