@@ -1,10 +1,8 @@
 package provider
 
-import "strings"
-
-func remove(slice []interface{}, s int) []interface{} {
-	return append(slice[:s], slice[s+1:]...)
-}
+import (
+	"strings"
+)
 
 func capitalize(s string) string {
 	if len(s) == 0 {

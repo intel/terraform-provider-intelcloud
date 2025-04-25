@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     intelcloud = {
-      source = "intel/intelcloud"
+      source  = "intel/intelcloud"
       version = "0.0.11"
     }
   }
@@ -25,9 +25,12 @@ data "intelcloud_machine_images" "image" {
 resource "intelcloud_instance" "example" {
   name = "tf-demo-instance"
   spec = {
-    instance_type        = var.instance_type 
-    machine_image        = var.machine_image 
+    instance_type        = var.instance_type
+    machine_image        = var.machine_image
     ssh_public_key_names = [var.ssh_public_key_names]
+  }
+  timeouts {
+    resource_timeout = "3m"
   }
 }
 

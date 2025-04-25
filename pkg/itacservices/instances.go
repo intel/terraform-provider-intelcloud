@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"terraform-provider-intelcloud/pkg/itacservices/common"
 
@@ -192,8 +191,7 @@ func (client *IDCServicesClient) CreateInstance(ctx context.Context, in *Instanc
 			return instance, fmt.Errorf("error reading instance state")
 		}
 	} else {
-		backoffTimer := retry.NewConstant(5 * time.Second)
-		backoffTimer = retry.WithMaxDuration(300*time.Second, backoffTimer)
+		backoffTimer := retry.NewConstant(common.DefaultRetryInterval)
 
 		if err := retry.Do(ctx, backoffTimer, func(_ context.Context) error {
 			instance, err = client.GetInstanceByResourceId(ctx, instance.Metadata.ResourceId)

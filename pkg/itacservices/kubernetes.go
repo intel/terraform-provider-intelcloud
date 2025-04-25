@@ -22,6 +22,7 @@ var (
 
 	createK8sNodeGroupURL = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/nodegroups"
 	getK8sNodeGroupURL    = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/nodegroups/{{.NodeGroupUUID}}"
+	updateNodeGroupURL    = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/nodegroups/{{.NodeGroupUUID}}"
 
 	getK8sKubeconfigURL  = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/kubeconfig"
 	upgradeK8sClusterURL = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/upgrade"
@@ -70,6 +71,7 @@ type ClusterNetwork struct {
 }
 
 type NodeGroup struct {
+	ClusterID            string `json:"clusteruuid"`
 	ID                   string `json:"nodegroupuuid"`
 	Name                 string `json:"name"`
 	Count                int64  `json:"count"`
@@ -151,6 +153,16 @@ type UpgradeClusterRequest struct {
 
 type UpgradeClusterPayload struct {
 	K8sVersion string `json:"k8sversionname"`
+}
+
+type UpdateNodeGroupRequest struct {
+	ClusterId   string `json:"clusteruuid"`
+	NodeGroupId string `json:"nodegroupuuid"`
+	Count       int64  `json:"count"`
+}
+
+type UpdateNodeGroupPayload struct {
+	Count int64 `json:"count"`
 }
 
 func (client *IDCServicesClient) GetKubernetesClusters(ctx context.Context) (*IKSClusters, *string, error) {
@@ -358,11 +370,10 @@ func (client *IDCServicesClient) CreateIKSNodeGroup(ctx context.Context, in *IKS
 		return nil, nil, fmt.Errorf("error parsing node group response")
 	}
 
-	backoffTimer := retry.NewConstant(5 * time.Second)
-	backoffTimer = retry.WithMaxDuration(9000*time.Second, backoffTimer)
+	backoffTimer := retry.NewConstant(common.DefaultRetryInterval)
 
 	if err := retry.Do(ctx, backoffTimer, func(_ context.Context) error {
-		ng, _, err = client.GetIKSNodeGroupByID(ctx, clusterUUID, ng.ID)
+		ng, err = client.GetIKSNodeGroupByID(ctx, clusterUUID, ng.ID)
 		if err != nil {
 			return fmt.Errorf("error reading node group state")
 		}
@@ -379,7 +390,7 @@ func (client *IDCServicesClient) CreateIKSNodeGroup(ctx context.Context, in *IKS
 	return ng, client.Cloudaccount, nil
 }
 
-func (client *IDCServicesClient) GetIKSNodeGroupByID(ctx context.Context, clusterId, ngId string) (*NodeGroup, *string, error) {
+func (client *IDCServicesClient) GetIKSNodeGroupByID(ctx context.Context, clusterId, ngId string) (*NodeGroup, error) {
 	params := struct {
 		Host          string
 		Cloudaccount  string
@@ -395,24 +406,24 @@ func (client *IDCServicesClient) GetIKSNodeGroupByID(ctx context.Context, cluste
 	// Parse the template string with the provided data
 	parsedURL, err := common.ParseString(getK8sNodeGroupURL, params)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error parsing the url")
+		return nil, fmt.Errorf("error parsing the url")
 	}
 
 	retcode, retval, err := common.MakeGetAPICall(ctx, parsedURL, *client.Apitoken, nil)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error reading node group resource by id")
+		return nil, fmt.Errorf("error reading node group resource by id")
 	}
 	tflog.Debug(ctx, "iks node group read response", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
-		return nil, nil, common.MapHttpError(retcode, retval)
+		return nil, common.MapHttpError(retcode, retval)
 	}
 
 	nodeGroup := NodeGroup{}
 	if err := json.Unmarshal(retval, &nodeGroup); err != nil {
-		return nil, nil, fmt.Errorf("error parsing iks cluster get response")
+		return nil, fmt.Errorf("error parsing iks cluster get response")
 	}
-	return &nodeGroup, client.Cloudaccount, nil
+	return &nodeGroup, nil
 }
 
 func (client *IDCServicesClient) CreateIKSStorage(ctx context.Context, in *IKSStorageCreateRequest, clusterUUID string) (*K8sStorage, *string, error) {
@@ -454,8 +465,7 @@ func (client *IDCServicesClient) CreateIKSStorage(ctx context.Context, in *IKSSt
 		return nil, nil, fmt.Errorf("error parsing node group response")
 	}
 
-	backoffTimer := retry.NewConstant(5 * time.Second)
-	backoffTimer = retry.WithMaxDuration(3000*time.Second, backoffTimer)
+	backoffTimer := retry.NewConstant(common.DefaultRetryInterval)
 
 	if err := retry.Do(ctx, backoffTimer, func(_ context.Context) error {
 		iksCluster, _, err := client.GetIKSClusterByClusterUUID(ctx, clusterUUID)
@@ -735,6 +745,68 @@ func (client *IDCServicesClient) UpgradeCluster(ctx context.Context, in *Upgrade
 		}
 	}); err != nil {
 		return fmt.Errorf("iks cluster state not ready after maximum retries")
+	}
+
+	return nil
+}
+
+func (client *IDCServicesClient) UpdateNodeGroup(ctx context.Context, in *UpdateNodeGroupRequest) error {
+	params := struct {
+		Host          string
+		Cloudaccount  string
+		ClusterUUID   string
+		NodeGroupUUID string
+	}{
+		Host:          *client.Host,
+		Cloudaccount:  *client.Cloudaccount,
+		ClusterUUID:   in.ClusterId,
+		NodeGroupUUID: in.NodeGroupId,
+	}
+
+	inArg := UpdateNodeGroupPayload{
+		Count: in.Count,
+	}
+	// Parse the template string with the provided data
+	parsedURL, err := common.ParseString(updateNodeGroupURL, params)
+	if err != nil {
+		return fmt.Errorf("error parsing the url: %v", err)
+	}
+
+	inArgs, err := json.MarshalIndent(inArg, "", "    ")
+	if err != nil {
+		return fmt.Errorf("error parsing input arguments")
+	}
+
+	retcode, retval, err := common.MakePutAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
+	if err != nil {
+		return fmt.Errorf("error calling upgrade cluster api")
+	}
+	if retcode != http.StatusOK {
+		return common.MapHttpError(retcode, retval)
+	}
+	tflog.Debug(ctx, "iks update nodegroup", map[string]any{"retcode": retcode, "retval": retval})
+
+	nodeGroup := &NodeGroup{}
+	if err := json.Unmarshal(retval, nodeGroup); err != nil {
+		return fmt.Errorf("error parsing instance response")
+	}
+
+	backoffTimer := retry.NewConstant(5 * time.Second)
+
+	if err := retry.Do(ctx, backoffTimer, func(_ context.Context) error {
+		nodeGroup, err = client.GetIKSNodeGroupByID(ctx, in.ClusterId, in.NodeGroupId)
+		if err != nil {
+			return fmt.Errorf("error reading nodegroup state after update")
+		}
+		if nodeGroup.State == "Active" {
+			return nil
+		} else if nodeGroup.State == "Failed" {
+			return fmt.Errorf("nodegroup state failed")
+		} else {
+			return retry.RetryableError(fmt.Errorf("iks nodegroup state not ready, retry again"))
+		}
+	}); err != nil {
+		return fmt.Errorf("iks nodegroup state not ready after maximum retries")
 	}
 
 	return nil

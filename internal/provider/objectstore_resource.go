@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -23,14 +24,15 @@ var (
 
 // objectstorageResourceModel maps the resource schema data.
 type objectStorageResourceModel struct {
-	ID              types.String `tfsdk:"id"`
-	Cloudaccount    types.String `tfsdk:"cloudaccount"`
-	Name            types.String `tfsdk:"name"`
-	Versioned       types.Bool   `tfsdk:"versioned"`
-	Size            types.String `tfsdk:"size"`
-	Status          types.String `tfsdk:"status"`
-	PrivateEndpoint types.String `tfsdk:"private_endpoint"`
-	SecurityGroups  types.List   `tfsdk:"security_groups"`
+	ID              types.String   `tfsdk:"id"`
+	Cloudaccount    types.String   `tfsdk:"cloudaccount"`
+	Name            types.String   `tfsdk:"name"`
+	Versioned       types.Bool     `tfsdk:"versioned"`
+	Size            types.String   `tfsdk:"size"`
+	Status          types.String   `tfsdk:"status"`
+	PrivateEndpoint types.String   `tfsdk:"private_endpoint"`
+	SecurityGroups  types.List     `tfsdk:"security_groups"`
+	Timeouts        *timeoutsModel `tfsdk:"timeouts"`
 }
 
 // NewObjectStorageResource is a helper function to simplify the provider implementation.
@@ -111,6 +113,18 @@ func (r *objectStorageResource) Schema(_ context.Context, _ resource.SchemaReque
 				},
 			},
 		},
+		Blocks: map[string]schema.Block{
+			"timeouts": schema.SingleNestedBlock{
+				Attributes: map[string]schema.Attribute{
+					"resource_timeout": schema.StringAttribute{
+						Optional:    true,
+						Computed:    true,
+						Description: "Timeout for objectstorage resource operations",
+						Default:     stringdefault.StaticString(ObjectstorageResourceTimeout),
+					},
+				},
+			},
+		},
 	}
 
 }
@@ -125,6 +139,15 @@ func (r *objectStorageResource) Create(ctx context.Context, req resource.CreateR
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// use timeouts if requested by the user
+	createTimeout, err := plan.Timeouts.GetTimeouts(ObjectStorageResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse create timeout: "+err.Error())
+	}
+	// Use the timeout context
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	inArg := itacservices.ObjectBucketCreateRequest{
 		Metadata: struct {
@@ -171,6 +194,13 @@ func (r *objectStorageResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	// Ensure timeout block is preserved
+	if plan.Timeouts != nil {
+		plan.Timeouts = &timeoutsModel{
+			ResourceTimeout: plan.Timeouts.ResourceTimeout,
+		}
+	}
+
 	// Set state to fully populated data
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
@@ -183,11 +213,21 @@ func (r *objectStorageResource) Create(ctx context.Context, req resource.CreateR
 func (r *objectStorageResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	// Get current state
 	var state objectStorageResourceModel
+
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// use timeouts if requested by the user
+	readTimeout, err := state.Timeouts.GetTimeouts(ObjectStorageResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse read timeout: "+err.Error())
+	}
+	// Use the timeout context
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
 
 	// Get refreshed order value from IDC Service
 	bucket, err := r.client.GetObjectBucketByResourceId(ctx, state.ID.ValueString())
@@ -250,8 +290,16 @@ func (r *objectStorageResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
+	deleteTimeout, err := state.Timeouts.GetTimeouts(ObjectStorageResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse delete timeout: "+err.Error())
+	}
+	// Use the timeout context
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
+
 	// Delete the order from IDC Services
-	err := r.client.DeleteBucketByResourceId(ctx, state.ID.ValueString())
+	err = r.client.DeleteBucketByResourceId(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting IDC Object Storage Bucket resource",

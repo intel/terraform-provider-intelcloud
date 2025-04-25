@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"terraform-provider-intelcloud/pkg/itacservices/common"
 
@@ -206,8 +205,7 @@ func (client *IDCServicesClient) CreateFilesystem(ctx context.Context, in *Files
 		return nil, fmt.Errorf("error parsing filesystem response")
 	}
 
-	backoffTimer := retry.NewConstant(5 * time.Second)
-	backoffTimer = retry.WithMaxDuration(300*time.Second, backoffTimer)
+	backoffTimer := retry.NewConstant(common.DefaultRetryInterval)
 
 	if err := retry.Do(ctx, backoffTimer, func(_ context.Context) error {
 		filesystem, err = client.GetFilesystemByResourceId(ctx, filesystem.Metadata.ResourceId)
