@@ -192,10 +192,13 @@ func (r *iksNodeGroupResource) Create(ctx context.Context, req resource.CreateRe
 	}
 
 	plan.ClusterUUID = types.StringValue(nodeGroupResp.ClusterID)
+	plan.Name = types.StringValue(nodeGroupResp.Name)
 	plan.ID = types.StringValue(nodeGroupResp.ID)
 	plan.IMIId = types.StringValue(nodeGroupResp.IMIID)
 	plan.State = types.StringValue(nodeGroupResp.State)
+	plan.Count = types.Int64Value(nodeGroupResp.Count)
 	plan.NodeType = types.StringValue(nodeGroupResp.InstanceType)
+	plan.UserDataURL = types.StringValue(nodeGroupResp.UserDataURL)
 	vnets := []models.NetworkInterfaceSpec{}
 	for _, iface := range nodeGroupResp.Interfaces {
 		v := models.NetworkInterfaceSpec{
@@ -211,6 +214,11 @@ func (r *iksNodeGroupResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 	plan.Vnets = vnetObj
+
+	plan.SSHPublicKeyNames = []types.String{}
+	for _, k := range nodeGroupResp.SSHKeyNames {
+		plan.SSHPublicKeyNames = append(plan.SSHPublicKeyNames, types.StringValue(k.Name))
+	}
 
 	// Set state to fully populated data
 	diags = resp.State.Set(ctx, plan)
@@ -251,11 +259,13 @@ func (r *iksNodeGroupResource) Read(ctx context.Context, req resource.ReadReques
 	}
 
 	state.ClusterUUID = types.StringValue(ngState.ClusterID)
+	state.Name = types.StringValue(ngState.Name)
 	state.ID = types.StringValue(ngState.ID)
 	state.IMIId = types.StringValue(ngState.IMIID)
 	state.State = types.StringValue(ngState.State)
 	state.Count = types.Int64Value(ngState.Count)
 	state.NodeType = types.StringValue(ngState.InstanceType)
+	state.UserDataURL = types.StringValue(ngState.UserDataURL)
 
 	vnets := []models.NetworkInterfaceSpec{}
 	for _, i := range ngState.Interfaces {
@@ -272,6 +282,11 @@ func (r *iksNodeGroupResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 	state.Vnets = vnetObj
+
+	state.SSHPublicKeyNames = []types.String{}
+	for _, k := range ngState.SSHKeyNames {
+		state.SSHPublicKeyNames = append(state.SSHPublicKeyNames, types.StringValue(k.Name))
+	}
 
 	// Set state to fully populated data
 	diags = resp.State.Set(ctx, &state)
