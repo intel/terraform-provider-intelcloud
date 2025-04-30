@@ -1,0 +1,55 @@
+name: Terraform Provider CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: on
+      TF_ACC: 1  # Required for acceptance tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+
+      - name: Install dependencies
+        run: go mod tidy
+
+      - name: Install golint
+        run: |
+          go install golang.org/x/lint/golint@latest
+          echo "${GOPATH}/bin" >> $GITHUB_PATH
+
+      - name: Run golint
+        run: golint ./...
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+
+      - name: Build
+        run: go build ./...
+
+      #- name: Run unit tests
+      #  run: go test ./... -v -short
+
+      #- name: Run acceptance tests
+      #  run: go test ./internal/provider -v -timeout=30m
+
+      #- name: Terraform init/validate examples
+      #  run: |
+      #    for dir in examples/*; do
+      #      terraform -chdir="$dir" init -backend=false
+      #      terraform -chdir="$dir" validate
+      #    done
