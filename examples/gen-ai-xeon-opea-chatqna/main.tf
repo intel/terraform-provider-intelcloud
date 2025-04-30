@@ -1,8 +1,8 @@
 terraform {
   required_providers {
     intelcloud = {
-      source = "intel/intelcloud"
-      version = "0.0.9"
+      source  = "intel/intelcloud"
+      version = "0.0.15"
     }
   }
 }
@@ -28,14 +28,14 @@ provider "intelcloud" {
 #   }
 # }
 
- resource "intelcloud_sshkey" "example" {
-    metadata = {
-       name = var.ssh_key_name
-     }
-     spec = {
-       ssh_public_key = file(var.ssh_pubkey_path)
-     }
- }
+resource "intelcloud_sshkey" "example" {
+  metadata = {
+    name = var.ssh_key_name
+  }
+  spec = {
+    ssh_public_key = file(var.ssh_pubkey_path)
+  }
+}
 
 resource "intelcloud_instance" "example" {
   name = var.instance_name
