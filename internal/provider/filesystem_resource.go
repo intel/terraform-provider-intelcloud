@@ -446,7 +446,7 @@ func mapFilesystemStatus(fsStatus string) string {
 func refreshFilesystemResourceModel(ctx context.Context, filesystem *itacservices.Filesystem) (*filesystemResourceModel, error) {
 
 	state := &filesystemResourceModel{}
-	diags := diag.Diagnostics{}
+	var diags diag.Diagnostics
 
 	sizeStr := strings.Split(filesystem.Spec.Request.Size, "TB")[0]
 	size, _ := strconv.ParseInt(sizeStr, 10, 64)
