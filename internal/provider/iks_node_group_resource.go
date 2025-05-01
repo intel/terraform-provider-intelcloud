@@ -100,7 +100,7 @@ func (r *iksNodeGroupResource) Schema(_ context.Context, _ resource.SchemaReques
 			"userdata_url": schema.StringAttribute{
 				Optional: true,
 			},
-			"ssh_public_key_names": schema.ListAttribute{
+			"ssh_public_key_names": schema.SetAttribute{
 				ElementType: types.StringType,
 				Required:    true,
 			},
