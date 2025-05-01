@@ -1,8 +1,8 @@
 terraform {
   required_providers {
     intelcloud = {
-      source = "intel/intelcloud"
-      version = "0.0.9"
+      source  = "intel/intelcloud"
+      version = "0.0.15"
     }
   }
 }
@@ -19,7 +19,7 @@ locals {
   }
 }
 
-data "idc_machine_images" "image" {
+data "intelcloud_machine_images" "image" {
   most_recent = true
   filters = [
     {
@@ -29,7 +29,7 @@ data "idc_machine_images" "image" {
   ]
 }
 
-resource "idc_sshkey" "sshkey-1" {
+resource "intelcloud_sshkey" "sshkey-1" {
   metadata = {
     name = "${local.name}-sshkey"
   }
@@ -38,40 +38,36 @@ resource "idc_sshkey" "sshkey-1" {
   }
 }
 
-resource "idc_instance" "myinstance-1" {
-  async             = false
-  name              = "${local.name}-instance"
-  availability_zone = var.idc_availability_zone
+resource "intelcloud_instance" "myinstance-1" {
+  name = "${local.name}-instance"
   spec = {
     instance_type = var.instance_types[var.instance_type]
-    machine_image = data.idc_machine_images.image.result.name
+    machine_image = data.intelcloud_machine_images.image.result.name
     interface_specs = [{
       name = var.instance_interface_spec.name
       vnet = var.instance_interface_spec.vnet
     }]
-    ssh_public_key_names = [idc_sshkey.sshkey-1.metadata.name]
+    ssh_public_key_names = [intelcloud_sshkey.sshkey-1.metadata.name]
   }
-  depends_on = [idc_sshkey.sshkey-1]
+  depends_on = [intelcloud_sshkey.sshkey-1]
 }
 
-resource "idc_filesystem" "fsvol-1" {
-  name              = "${local.name}-filevol"
-  description       = var.filesystem_description
-  availability_zone = var.idc_availability_zone
+resource "intelcloud_filesystem" "fsvol-1" {
+  name = "${local.name}-filevol"
+
   spec = {
-    size_in_gb      = var.filesystem_size_in_gb
-    filesystem_type = var.filesystem_type
+    size_in_tb = var.filesystem_size_in_gb
   }
 }
 
-resource "idc_object_storage_bucket" "bucket1" {
+resource "intelcloud_object_storage_bucket" "bucket1" {
   name      = "${local.name}-bucket"
   versioned = false
 }
 
-resource "idc_object_storage_bucket_user" "user1" {
-  name      = "${idc_object_storage_bucket.bucket1.name}-user"
-  bucket_id = "${idc_object_storage_bucket.bucket1.cloudaccount}-${idc_object_storage_bucket.bucket1.name}"
+resource "intelcloud_object_storage_bucket_user" "user1" {
+  name      = "${intelcloud_object_storage_bucket.bucket1.name}-user"
+  bucket_id = "${intelcloud_object_storage_bucket.bucket1.cloudaccount}-${intelcloud_object_storage_bucket.bucket1.name}"
   allow_actions = [
     "GetBucketLocation",
     "GetBucketPolicy",
@@ -90,32 +86,26 @@ resource "idc_object_storage_bucket_user" "user1" {
   }
 }
 
-resource "idc_iks_cluster" "cluster1" {
-  async              = false
+resource "intelcloud_iks_cluster" "cluster1" {
   name               = "${local.name}-iks"
-  availability_zone  = var.idc_availability_zone
   kubernetes_version = "1.27"
 
   storage = {
-    size_in_gb = 30
+    size_in_tb = 30
   }
 }
 
-resource "idc_iks_node_group" "ng1" {
-  cluster_uuid         = idc_iks_cluster.cluster1.id
+resource "intelcloud_iks_node_group" "ng1" {
+  cluster_uuid         = intelcloud_iks_cluster.cluster1.id
   name                 = "${local.name}-ng"
   node_count           = 1
   node_type            = var.instance_types[var.instance_type]
   userdata_url         = ""
-  ssh_public_key_names = [idc_sshkey.sshkey-1.metadata.name]
-  interfaces = [{
-    name = var.idc_availability_zone
-    vnet = var.instance_interface_spec.vnet
-  }]
+  ssh_public_key_names = [intelcloud_sshkey.sshkey-1.metadata.name]
 }
 
-resource "idc_iks_lb" "lb1" {
-  cluster_uuid = idc_iks_cluster.cluster1.id
+resource "intelcloud_iks_lb" "lb1" {
+  cluster_uuid = intelcloud_iks_cluster.cluster1.id
   load_balancers = [
     {
       name     = "${local.name}-lb-pub2"
@@ -123,5 +113,5 @@ resource "idc_iks_lb" "lb1" {
       vip_type = "public"
     }
   ]
-  depends_on = [idc_iks_node_group.ng1]
+  depends_on = [intelcloud_iks_node_group.ng1]
 }

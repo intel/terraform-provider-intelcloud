@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -130,7 +131,7 @@ func (d *filesystemsDataSource) Read(ctx context.Context, req datasource.ReadReq
 	var state filesystemsDataSourceModel
 	state.Filesystems = []models.FilesystemModel{}
 
-	diags := resp.Diagnostics
+	var diags diag.Diagnostics
 	fsList, err := d.client.GetFilesystems(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(

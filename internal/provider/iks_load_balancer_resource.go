@@ -127,7 +127,7 @@ func (r *iksLBResource) Create(ctx context.Context, req resource.CreateRequest, 
 			return
 		}
 
-		plan.LoadBalancers[idx].ID = types.StringValue(strconv.FormatInt(ilbResp.ID, 64))
+		plan.LoadBalancers[idx].ID = types.StringValue(strconv.FormatInt(ilbResp.ID, 10))
 		plan.LoadBalancers[idx].PoolPort = types.Int64Value(int64(ilbResp.PoolPort))
 		plan.LoadBalancers[idx].VipState = types.StringValue(ilbResp.VIPState)
 		plan.LoadBalancers[idx].VipIp = types.StringValue(ilbResp.VIPIP)

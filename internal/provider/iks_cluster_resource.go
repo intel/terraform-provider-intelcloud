@@ -458,7 +458,7 @@ func (r *iksClusterResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 func refreshIKSCLusterResourceModel(ctx context.Context, cluster *itacservices.IKSCluster, cloudaccount *string) (*iksClusterResourceModel, error) {
 	state := &iksClusterResourceModel{}
-	diags := diag.Diagnostics{}
+	var diags diag.Diagnostics
 
 	state.ID = types.StringValue(cluster.ResourceId)
 	state.K8sversion = types.StringValue(cluster.K8sVersion)

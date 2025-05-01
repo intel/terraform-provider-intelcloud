@@ -12,6 +12,13 @@ provider "intelcloud" {
   region = "us-region-2"
 }
 
+provider "random" {
+  # Configuration options
+}
+
+/**** Random provider used to generate random names (like pet names) ****/
+resource "random_pet" "prefix" {}
+
 locals {
   name              = random_pet.prefix.id
   availability_zone = "us-region-2a"

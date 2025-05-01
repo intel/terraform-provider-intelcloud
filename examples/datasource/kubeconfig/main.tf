@@ -1,8 +1,8 @@
 terraform {
   required_providers {
     intelcloud = {
-      source = "intel/intelcloud"
-      version = "0.0.6"
+      source  = "intel/intelcloud"
+      version = "0.0.15"
     }
   }
 }
@@ -13,7 +13,7 @@ provider "intelcloud" {
 }
 
 data "intelcloud_kubeconfig" "kubeconfig" {
-  cluster_uuid  = "cl-e4nimo7leq"
+  cluster_uuid = "cl-e4nimo7leq"
 }
 
 resource "local_file" "kubeconfig_output" {
