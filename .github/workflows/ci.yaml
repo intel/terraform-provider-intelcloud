@@ -41,15 +41,23 @@ jobs:
       - name: Build
         run: go build ./...
 
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.10.4
+
+      - name: Terraform init/validate examples
+        run: |
+          find examples -type f -name '*.tf' -exec dirname {} \; | sort -u | while read dir; do
+            echo "Running terraform validation in $dir"
+            terraform -chdir="$dir" init -backend=false
+            terraform -chdir="$dir" validate
+          done
+
+
+      # TODO
       #- name: Run unit tests
       #  run: go test ./... -v -short
 
       #- name: Run acceptance tests
       #  run: go test ./internal/provider -v -timeout=30m
-
-      #- name: Terraform init/validate examples
-      #  run: |
-      #    for dir in examples/*; do
-      #      terraform -chdir="$dir" init -backend=false
-      #      terraform -chdir="$dir" validate
-      #    done

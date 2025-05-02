@@ -7,7 +7,6 @@ import (
 	"terraform-provider-intelcloud/internal/models"
 	"terraform-provider-intelcloud/pkg/itacservices"
 
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -100,7 +99,7 @@ func (r *iksNodeGroupResource) Schema(_ context.Context, _ resource.SchemaReques
 			"userdata_url": schema.StringAttribute{
 				Optional: true,
 			},
-			"ssh_public_key_names": schema.ListAttribute{
+			"ssh_public_key_names": schema.SetAttribute{
 				ElementType: types.StringType,
 				Required:    true,
 			},
@@ -425,7 +424,6 @@ func (r *iksNodeGroupResource) Delete(ctx context.Context, req resource.DeleteRe
 
 func refreshIKSNodegroupResourceModel(ctx context.Context, nodegroup *itacservices.NodeGroup) (*iksNodeGroupResourceModel, error) {
 	state := &iksNodeGroupResourceModel{}
-	diags := diag.Diagnostics{}
 
 	state.ID = types.StringValue(nodegroup.ID)
 	state.ClusterUUID = types.StringValue(nodegroup.ClusterID)
