@@ -16,7 +16,7 @@ type APIError struct {
 }
 
 const (
-	DefaultRetryInterval = time.Duration(4 * time.Second)
+	DefaultRetryInterval = time.Duration(5 * time.Second)
 )
 
 // ParseString parses the given template string with the provided data.

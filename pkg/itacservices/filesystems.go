@@ -103,12 +103,12 @@ func (client *IDCServicesClient) GetFilesystems(ctx context.Context) (*Filesyste
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(getAllFilesystemsURL, params)
+	parsedURL, err := client.APIClient.ParseString(getAllFilesystemsURL, params)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing the url")
 	}
 
-	retcode, retval, err := common.MakeGetAPICall(ctx, parsedURL, *client.Apitoken, nil)
+	retcode, retval, err := client.APIClient.MakeGetAPICall(ctx, parsedURL, *client.Apitoken, nil)
 	tflog.Debug(ctx, "filesystem read api", map[string]any{"retcode": retcode, "retval": string(retval)})
 	if err != nil {
 		return nil, fmt.Errorf("error reading filesystems")
@@ -151,12 +151,12 @@ func (client *IDCServicesClient) GenerateFilesystemLoginCredentials(ctx context.
 		ResourceId:   resourceId,
 	}
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(getLoginCredentials, getLoginParams)
+	parsedURL, err := client.APIClient.ParseString(getLoginCredentials, getLoginParams)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing the url")
 	}
 
-	retcode, retval, err := common.MakeGetAPICall(ctx, parsedURL, *client.Apitoken, nil)
+	retcode, retval, err := client.APIClient.MakeGetAPICall(ctx, parsedURL, *client.Apitoken, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating login credentials")
 	}
@@ -180,7 +180,7 @@ func (client *IDCServicesClient) CreateFilesystem(ctx context.Context, in *Files
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(createFilesystemsURL, params)
+	parsedURL, err := client.APIClient.ParseString(createFilesystemsURL, params)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing the url")
 	}
@@ -191,7 +191,7 @@ func (client *IDCServicesClient) CreateFilesystem(ctx context.Context, in *Files
 	}
 
 	tflog.Debug(ctx, "filesystem create api", map[string]any{"url": parsedURL, "inArgs": string(inArgs)})
-	retcode, retval, err := common.MakePOSTAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
+	retcode, retval, err := client.APIClient.MakePOSTAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
 	tflog.Debug(ctx, "filesystem create api", map[string]any{"retcode": retcode, "retval": string(retval)})
 	if err != nil {
 		return nil, fmt.Errorf("error reading filesystem create response")
@@ -248,12 +248,12 @@ func (client *IDCServicesClient) GetFilesystemByResourceId(ctx context.Context, 
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(getFilesystemByResourceId, params)
+	parsedURL, err := client.APIClient.ParseString(getFilesystemByResourceId, params)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing the url")
 	}
 
-	retcode, retval, err := common.MakeGetAPICall(ctx, parsedURL, *client.Apitoken, nil)
+	retcode, retval, err := client.APIClient.MakeGetAPICall(ctx, parsedURL, *client.Apitoken, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error reading filesystem by resource id")
 	}
@@ -282,12 +282,12 @@ func (client *IDCServicesClient) DeleteFilesystemByResourceId(ctx context.Contex
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(deleteFilesystemByResourceId, params)
+	parsedURL, err := client.APIClient.ParseString(deleteFilesystemByResourceId, params)
 	if err != nil {
 		return fmt.Errorf("error parsing the url")
 	}
 
-	retcode, retval, err := common.MakeDeleteAPICall(ctx, parsedURL, *client.Apitoken, nil)
+	retcode, retval, err := client.APIClient.MakeDeleteAPICall(ctx, parsedURL, *client.Apitoken, nil)
 	if err != nil {
 		return fmt.Errorf("error deleting filesystem by resource id")
 	}
@@ -315,7 +315,7 @@ func (client *IDCServicesClient) UpdateFilesystem(ctx context.Context, in *Files
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(updateFilesystemByName, params)
+	parsedURL, err := client.APIClient.ParseString(updateFilesystemByName, params)
 	if err != nil {
 		return fmt.Errorf("error parsing the url")
 	}
@@ -329,7 +329,7 @@ func (client *IDCServicesClient) UpdateFilesystem(ctx context.Context, in *Files
 	}
 	tflog.Debug(ctx, "filesystem update api", map[string]any{"url": parsedURL, "payload byte": paramsByte})
 
-	retcode, retval, err := common.MakePutAPICall(ctx, parsedURL, *client.Apitoken, paramsByte)
+	retcode, retval, err := client.APIClient.MakePutAPICall(ctx, parsedURL, *client.Apitoken, paramsByte)
 	if err != nil {
 		return fmt.Errorf("error updating filesystem by name")
 	}
