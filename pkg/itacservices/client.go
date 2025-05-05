@@ -24,6 +24,7 @@ type IDCServicesClient struct {
 	Clientid     *string
 	Clientsecret *string
 	ExpireAt     time.Time
+	APIClient    common.APIClient
 }
 
 var (
@@ -99,5 +100,6 @@ func NewClient(ctx context.Context, host, tokenSvc, cloudaccount, clientid, clie
 		Region:       region,
 		Apitoken:     &tokenResp.AccessToken,
 		ExpireAt:     time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second),
+		APIClient:    common.NewAPIClient(),
 	}, nil
 }

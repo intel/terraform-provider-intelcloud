@@ -3,7 +3,7 @@ terraform {
   required_providers {
     intelcloud = {
       source  = "intel/intelcloud"
-      version = "0.0.15"
+      version = "0.0.19"
     }
   }
 }
