@@ -123,19 +123,21 @@ type IKSStorageCreateRequest struct {
 }
 
 type IKSLoadBalancerRequest struct {
-	Name    string `json:"name"`
-	Port    int    `json:"port"`
-	VIPType string `json:"viptype"`
+	Name        string `json:"name"`
+	Port        int    `json:"port"`
+	VIPType     string `json:"viptype"`
+	Description string `json:"description"`
 }
 
 type IKSLoadBalancer struct {
-	ID       int64  `json:"vipid"`
-	Name     string `json:"name"`
-	Port     int    `json:"port"`
-	VIPType  string `json:"viptype"`
-	VIPState string `json:"vipstate"`
-	VIPIP    string `json:"vipip"`
-	PoolPort int    `json:"poolport"`
+	ID          int64  `json:"vipid"`
+	Name        string `json:"name"`
+	Port        int    `json:"port"`
+	VIPType     string `json:"viptype"`
+	VIPState    string `json:"vipstate"`
+	VIPIP       string `json:"vipip"`
+	PoolPort    int    `json:"poolport"`
+	Description string `json:"description"`
 }
 
 type IKSLBsByCluster struct {
@@ -533,8 +535,7 @@ func (client *IDCServicesClient) CreateIKSLoadBalancer(ctx context.Context, in *
 		return nil, nil, fmt.Errorf("error parsing load balancer response")
 	}
 
-	backoffTimer := retry.NewConstant(5 * time.Second)
-	backoffTimer = retry.WithMaxDuration(3000*time.Second, backoffTimer)
+	backoffTimer := retry.NewConstant(common.DefaultRetryInterval)
 
 	if err := retry.Do(ctx, backoffTimer, func(_ context.Context) error {
 		iksLB, err = client.GetIKSLoadBalancerByID(ctx, clusterUUID, iksLB.ID)
