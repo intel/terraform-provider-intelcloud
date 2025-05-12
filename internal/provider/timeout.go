@@ -20,6 +20,10 @@ const (
 	IKSClusterResourceName    = "ikscluster"
 	IKSClusterResourceTimeout = "30m"
 
+	//IKS Load Balancer defaults
+	IKSLoadBalancerResourceName    = "iksloadbalancer"
+	IKSLoadBalancerResourceTimeout = "30m"
+
 	//Filesystem defaults
 	FilesystemResourceName    = "filesystem"
 	FileSystemResourceTimeout = "5m"
@@ -30,11 +34,12 @@ const (
 )
 
 var DefaultTimeouts = map[string]string{
-	InstanceResourceName:      InstanceResourceTimeout,
-	IKSNodegroupResourceName:  IKSNodegroupResourceTimeout,
-	IKSClusterResourceName:    IKSClusterResourceTimeout,
-	FilesystemResourceName:    FileSystemResourceTimeout,
-	ObjectStorageResourceName: ObjectstorageResourceTimeout,
+	InstanceResourceName:        InstanceResourceTimeout,
+	IKSNodegroupResourceName:    IKSNodegroupResourceTimeout,
+	IKSClusterResourceName:      IKSClusterResourceTimeout,
+	IKSLoadBalancerResourceName: IKSLoadBalancerResourceTimeout,
+	FilesystemResourceName:      FileSystemResourceTimeout,
+	ObjectStorageResourceName:   ObjectstorageResourceTimeout,
 }
 
 type timeoutsModel struct {
