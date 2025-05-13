@@ -10,6 +10,15 @@ import (
 	"time"
 )
 
+type APIClient interface {
+	MakeGetAPICall(ctx context.Context, url, token string, headers map[string]string) (int, []byte, error)
+	MakePOSTAPICall(ctx context.Context, url, token string, payload []byte) (int, []byte, error)
+	MakePutAPICall(ctx context.Context, url, token string, payload []byte) (int, []byte, error)
+	MakeDeleteAPICall(ctx context.Context, url, token string, headers map[string]string) (int, []byte, error)
+	GenerateFilesystemLoginCredentials(ctx context.Context, resourceId string) (*string, error)
+	ParseString(tmpl string, data any) (string, error)
+}
+
 // MakeGetAPICall :
 func MakeGetAPICall(ctx context.Context, connURL, auth string, payload []byte) (int, []byte, error) {
 
