@@ -54,6 +54,16 @@ jobs:
             terraform -chdir="$dir" validate
           done
 
+      - name: Run unit tests
+        run: |
+          go test ./... -v -short -race -coverprofile=coverage.out
+
+      - name: Upload unit test coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage.out
+
 
       # TODO
       #- name: Run unit tests
