@@ -3,7 +3,6 @@ package itacservices_test
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"terraform-provider-intelcloud/pkg/itacservices"
 	"terraform-provider-intelcloud/pkg/mocks"
 	"testing"
@@ -66,7 +65,6 @@ func TestGetFilesystems_Success(t *testing.T) {
 		}`), nil).AnyTimes()
 
 	filesystems, err := client.GetFilesystems(ctx)
-	log.Printf("filesystems: %v", filesystems)
 
 	assert.NoError(t, err)
 	assert.Len(t, filesystems.FilesystemList, 1)
