@@ -54,6 +54,19 @@ jobs:
             terraform -chdir="$dir" validate
           done
 
+      - name: Run unit tests
+        run: |
+          go test -v ./pkg/itacservices/tests \
+          -coverpkg=./pkg/itacservices,./pkg/itacservices/common \
+          -coverprofile=coverage.out
+
+
+      - name: Upload unit test coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.out
+
 
       # TODO
       #- name: Run unit tests

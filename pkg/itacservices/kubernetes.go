@@ -177,12 +177,12 @@ func (client *IDCServicesClient) GetKubernetesClusters(ctx context.Context) (*IK
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(getAllK8sClustersURL, params)
+	parsedURL, err := client.APIClient.ParseString(getAllK8sClustersURL, params)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error parsing the url")
 	}
 
-	retcode, retval, err := common.MakeGetAPICall(ctx, parsedURL, *client.Apitoken, nil)
+	retcode, retval, err := client.APIClient.MakeGetAPICall(ctx, parsedURL, *client.Apitoken, nil)
 	tflog.Debug(ctx, "iks read api", map[string]any{"retcode": retcode, "retval": string(retval)})
 	if err != nil {
 		return nil, nil, fmt.Errorf("error reading iks clusters")
@@ -211,7 +211,7 @@ func (client *IDCServicesClient) CreateIKSCluster(ctx context.Context, in *IKSCr
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(createK8sClusterURL, params)
+	parsedURL, err := client.APIClient.ParseString(createK8sClusterURL, params)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error parsing the url")
 	}
@@ -222,7 +222,7 @@ func (client *IDCServicesClient) CreateIKSCluster(ctx context.Context, in *IKSCr
 	}
 
 	tflog.Debug(ctx, "iks create api request", map[string]any{"url": parsedURL, "inArgs": string(inArgs)})
-	retcode, retval, err := common.MakePOSTAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
+	retcode, retval, err := client.APIClient.MakePOSTAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
 
 	if err != nil {
 		return nil, nil, fmt.Errorf("error reading iks create response")
@@ -268,6 +268,7 @@ func (client *IDCServicesClient) CreateIKSCluster(ctx context.Context, in *IKSCr
 }
 
 func (client *IDCServicesClient) GetIKSClusterByClusterUUID(ctx context.Context, clusterUUID string) (*IKSCluster, *string, error) {
+	tflog.Info(ctx, "RK=>get iks cluster by uuid", map[string]any{"clusterUUID": clusterUUID})
 	params := struct {
 		Host         string
 		Cloudaccount string
@@ -279,7 +280,7 @@ func (client *IDCServicesClient) GetIKSClusterByClusterUUID(ctx context.Context,
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(getIksClusterByClusterUUID, params)
+	parsedURL, err := client.APIClient.ParseString(getIksClusterByClusterUUID, params)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error parsing the url")
 	}
@@ -313,7 +314,7 @@ func (client *IDCServicesClient) DeleteIKSCluster(ctx context.Context, clusterUU
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(deleteIksCluster, params)
+	parsedURL, err := client.APIClient.ParseString(deleteIksCluster, params)
 	if err != nil {
 		return fmt.Errorf("error parsing the url")
 	}
@@ -345,7 +346,7 @@ func (client *IDCServicesClient) CreateIKSNodeGroup(ctx context.Context, in *IKS
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(createK8sNodeGroupURL, params)
+	parsedURL, err := client.APIClient.ParseString(createK8sNodeGroupURL, params)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error parsing the url")
 	}
@@ -356,7 +357,7 @@ func (client *IDCServicesClient) CreateIKSNodeGroup(ctx context.Context, in *IKS
 	}
 
 	tflog.Debug(ctx, "iks node group create api request", map[string]any{"url": parsedURL, "inArgs": string(inArgs)})
-	retcode, retval, err := common.MakePOSTAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
+	retcode, retval, err := client.APIClient.MakePOSTAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
 
 	if err != nil {
 		return nil, nil, fmt.Errorf("error reading iks node group create response")
@@ -406,7 +407,7 @@ func (client *IDCServicesClient) GetIKSNodeGroupByID(ctx context.Context, cluste
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(getK8sNodeGroupURL, params)
+	parsedURL, err := client.APIClient.ParseString(getK8sNodeGroupURL, params)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing the url")
 	}
@@ -440,7 +441,7 @@ func (client *IDCServicesClient) CreateIKSStorage(ctx context.Context, in *IKSSt
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(createK8sFileStorageURL, params)
+	parsedURL, err := client.APIClient.ParseString(createK8sFileStorageURL, params)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error parsing the url")
 	}
@@ -451,7 +452,7 @@ func (client *IDCServicesClient) CreateIKSStorage(ctx context.Context, in *IKSSt
 	}
 
 	tflog.Debug(ctx, "iks file storage create api request", map[string]any{"url": parsedURL, "inArgs": string(inArgs)})
-	retcode, retval, err := common.MakePOSTAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
+	retcode, retval, err := client.APIClient.MakePOSTAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
 
 	if err != nil {
 		return nil, nil, fmt.Errorf("error reading iks file storage create response")
@@ -508,7 +509,7 @@ func (client *IDCServicesClient) CreateIKSLoadBalancer(ctx context.Context, in *
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(createIKSLBURL, params)
+	parsedURL, err := client.APIClient.ParseString(createIKSLBURL, params)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error parsing the url")
 	}
@@ -519,7 +520,7 @@ func (client *IDCServicesClient) CreateIKSLoadBalancer(ctx context.Context, in *
 	}
 
 	tflog.Debug(ctx, "iks load balancer create api request", map[string]any{"url": parsedURL, "inArgs": string(inArgs)})
-	retcode, retval, err := common.MakePOSTAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
+	retcode, retval, err := client.APIClient.MakePOSTAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
 
 	if err != nil {
 		return nil, nil, fmt.Errorf("error reading iks load balancer create response")
@@ -568,7 +569,7 @@ func (client *IDCServicesClient) GetIKSLoadBalancerByID(ctx context.Context, clu
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(getIKSLBURLByID, params)
+	parsedURL, err := client.APIClient.ParseString(getIKSLBURLByID, params)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing the url")
 	}
@@ -602,7 +603,7 @@ func (client *IDCServicesClient) GetIKSLoadBalancerByClusterUUID(ctx context.Con
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(getIKSLBURLByCluster, params)
+	parsedURL, err := client.APIClient.ParseString(getIKSLBURLByCluster, params)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing the url")
 	}
@@ -638,7 +639,7 @@ func (client *IDCServicesClient) DeleteIKSNodeGroup(ctx context.Context, cluster
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(getK8sNodeGroupURL, params)
+	parsedURL, err := client.APIClient.ParseString(getK8sNodeGroupURL, params)
 	if err != nil {
 		return fmt.Errorf("error parsing the url")
 	}
@@ -668,7 +669,7 @@ func (client *IDCServicesClient) GetClusterKubeconfig(ctx context.Context, clust
 	}
 
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(getK8sKubeconfigURL, params)
+	parsedURL, err := client.APIClient.ParseString(getK8sKubeconfigURL, params)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing the url")
 	}
@@ -705,7 +706,7 @@ func (client *IDCServicesClient) UpgradeCluster(ctx context.Context, in *Upgrade
 		K8sVersion: in.K8sVersion,
 	}
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(upgradeK8sClusterURL, params)
+	parsedURL, err := client.APIClient.ParseString(upgradeK8sClusterURL, params)
 	if err != nil {
 		return fmt.Errorf("error parsing the url")
 	}
@@ -715,7 +716,7 @@ func (client *IDCServicesClient) UpgradeCluster(ctx context.Context, in *Upgrade
 		return fmt.Errorf("error parsing input arguments")
 	}
 
-	retcode, retval, err := common.MakePOSTAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
+	retcode, retval, err := client.APIClient.MakePOSTAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
 	if err != nil {
 		return fmt.Errorf("error calling upgrade cluster api")
 	}
@@ -768,7 +769,7 @@ func (client *IDCServicesClient) UpdateNodeGroup(ctx context.Context, in *Update
 		Count: in.Count,
 	}
 	// Parse the template string with the provided data
-	parsedURL, err := common.ParseString(updateNodeGroupURL, params)
+	parsedURL, err := client.APIClient.ParseString(updateNodeGroupURL, params)
 	if err != nil {
 		return fmt.Errorf("error parsing the url: %v", err)
 	}
@@ -778,7 +779,7 @@ func (client *IDCServicesClient) UpdateNodeGroup(ctx context.Context, in *Update
 		return fmt.Errorf("error parsing input arguments")
 	}
 
-	retcode, retval, err := common.MakePutAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
+	retcode, retval, err := client.APIClient.MakePutAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
 	if err != nil {
 		return fmt.Errorf("error calling upgrade cluster api")
 	}

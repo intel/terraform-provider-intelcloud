@@ -24,6 +24,7 @@ type IDCServicesClient struct {
 	Clientid     *string
 	Clientsecret *string
 	ExpireAt     time.Time
+	APIClient    common.APIClient
 }
 
 var (
