@@ -111,13 +111,15 @@ func (client *IDCServicesClient) GetInstanceTypes(ctx context.Context) (*Instanc
 	return &instType, nil
 }
 
-func (client *IDCServicesClient) GetImis(ctx context.Context) (*ImisResponse, error) {
+func (client *IDCServicesClient) GetImis(ctx context.Context, clusterUUID string) (*ImisResponse, error) {
 	params := struct {
 		Host         string
 		Cloudaccount string
+		ClusterUUID  string
 	}{
 		Host:         *client.Host,
 		Cloudaccount: *client.Cloudaccount,
+		ClusterUUID:  clusterUUID,
 	}
 
 	// Parse the template string with the provided data

@@ -29,17 +29,18 @@ var (
 
 // storagesDataSourceModel maps the data source schema data.
 type imisDataSourceModel struct {
-	Filters []KVFilter         `tfsdk:"filters"`
-	Result  *models.ImisModel  `tfsdk:"result"`
-	Imis    []models.ImisModel `tfsdk:"items"`
+	ClusterUUID types.String       `tfsdk:"clusteruuid"`
+	Filters     []KVFilter         `tfsdk:"filters"`
+	Result      *models.ImisModel  `tfsdk:"result"`
+	Imis        []models.ImisModel `tfsdk:"items"`
 }
 
 // Configure adds the provider configured client to the data source.
 func (d *imisDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
+		fmt.Println("[DEBUG] ProviderData is nil")
 		return
 	}
-
 	client, ok := req.ProviderData.(*itacservices.IDCServicesClient)
 	if !ok {
 		resp.Diagnostics.AddError(
@@ -53,9 +54,17 @@ func (d *imisDataSource) Configure(_ context.Context, req datasource.ConfigureRe
 	d.client = client
 }
 
+func (d *imisDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_imis"
+}
+
 func (d *imisDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
+			"clusteruuid": schema.StringAttribute{
+				Required:    true,
+				Description: "The UUID of the cluster.",
+			},
 			"filters": schema.ListNestedAttribute{
 				Required: true,
 				NestedObject: schema.NestedAttributeObject{
@@ -76,17 +85,17 @@ func (d *imisDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 					"instancetypename": schema.StringAttribute{
 						Computed: true,
 					},
-					"workerImi": schema.ListNestedAttribute{
+					"workerimi": schema.ListNestedAttribute{
 						Computed: true,
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
-								"imiName": schema.StringAttribute{
+								"iminame": schema.StringAttribute{
 									Computed: true,
 								},
 								"info": schema.StringAttribute{
 									Computed: true,
 								},
-								"isDefaultImi": schema.BoolAttribute{
+								"isdefaultimi": schema.BoolAttribute{
 									Computed: true,
 								},
 							},
@@ -101,17 +110,17 @@ func (d *imisDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 						"instancetypename": schema.StringAttribute{
 							Computed: true,
 						},
-						"workerImi": schema.ListNestedAttribute{
+						"workerimi": schema.ListNestedAttribute{
 							Computed: true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
-									"imiName": schema.StringAttribute{
+									"iminame": schema.StringAttribute{
 										Computed: true,
 									},
 									"info": schema.StringAttribute{
 										Computed: true,
 									},
-									"isDefaultImi": schema.BoolAttribute{
+									"isdefaultimi": schema.BoolAttribute{
 										Computed: true,
 									},
 								},
@@ -124,10 +133,6 @@ func (d *imisDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 	}
 }
 
-func (d *imisDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_imis"
-}
-
 func (d *imisDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state imisDataSourceModel
 
@@ -137,10 +142,20 @@ func (d *imisDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	instanceImis, err := d.client.GetImis(ctx)
+	if state.ClusterUUID.IsUnknown() || state.ClusterUUID.IsNull() {
+		resp.Diagnostics.AddError("Missing clusteruuid", "The 'clusteruuid' field is required.")
+		return
+	}
+
+	if d.client == nil {
+		resp.Diagnostics.AddError("RK=>client is nil", "The client is not configured. Please check your provider configuration.")
+		return
+	}
+
+	instanceImis, err := d.client.GetImis(ctx, state.ClusterUUID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to Read ITAC Imis'",
+			fmt.Sprintf("Unable to Read ITAC Imis: %s", state.ClusterUUID.ValueString()),
 			err.Error(),
 		)
 		return
@@ -165,7 +180,13 @@ func (d *imisDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	filteredImages := filterImis(allImis, state.Filters)
 
 	state.Imis = append(state.Imis, filteredImages...)
-	state.Result = &filteredImages[0]
+	if len(filteredImages) > 0 {
+		state.Imis = filteredImages
+		state.Result = &filteredImages[0]
+	} else {
+		state.Imis = []models.ImisModel{}
+		state.Result = nil
+	}
 
 	// Set state
 	diags = resp.State.Set(ctx, &state)

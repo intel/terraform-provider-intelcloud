@@ -90,7 +90,7 @@ func TestGetImis(t *testing.T) {
 		Return(http.StatusOK, mockJSON, nil)
 
 	// Call the function
-	resp, err := idcClient.GetImis(ctx)
+	resp, err := idcClient.GetImis(ctx, "clusteruuid-1")
 
 	// Verify
 	require.NoError(t, err)
