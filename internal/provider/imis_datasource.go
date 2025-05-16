@@ -148,7 +148,7 @@ func (d *imisDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	}
 
 	if d.client == nil {
-		resp.Diagnostics.AddError("RK=>client is nil", "The client is not configured. Please check your provider configuration.")
+		resp.Diagnostics.AddError("client is nil", "The client is not configured. Please check your provider configuration.")
 		return
 	}
 

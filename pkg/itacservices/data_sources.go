@@ -132,7 +132,7 @@ func (client *IDCServicesClient) GetImis(ctx context.Context, clusterUUID string
 		tflog.Debug(ctx, "imis api error", map[string]any{"retcode": retcode, "err": err, "token": *client.Apitoken})
 		return nil, fmt.Errorf("error reading imis")
 	}
-	tflog.Debug(ctx, "machine images api", map[string]any{"retcode": retcode, "retval": string(retval), "token": *client.Apitoken})
+	tflog.Debug(ctx, "ims api", map[string]any{"retcode": retcode, "retval": string(retval), "token": *client.Apitoken})
 	if retcode != http.StatusOK {
 		return nil, common.MapHttpError(retcode, retval)
 	}
