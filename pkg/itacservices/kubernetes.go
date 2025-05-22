@@ -122,12 +122,21 @@ type IKSStorageCreateRequest struct {
 	Size   string `json:"storagesize"`
 }
 
-type IKSLoadBalancerRequest struct {
-	Name        string `json:"name"`
-	Port        int    `json:"port"`
-	VIPType     string `json:"viptype"`
-	Description string `json:"description"`
-}
+// Old IKS LB
+//type IKSLoadBalancerRequest struct {
+//	Name        string `json:"name"`
+//	Port        int    `json:"port"`
+//	VIPType     string `json:"viptype"`
+//	Description string `json:"description"`
+//}
+
+//type IKSLoadBalancerRequest struct {
+//	Name        string `json:"name"`
+//	Port        int    `json:"port"`
+//	VIPType     string `json:"viptype"`
+//	Description string `json:"description"`
+//}
+//
 
 type IKSLoadBalancer struct {
 	ID          int64  `json:"vipid"`
@@ -142,6 +151,86 @@ type IKSLoadBalancer struct {
 
 type IKSLBsByCluster struct {
 	Items []IKSLoadBalancer `json:"response"`
+}
+
+type IKSLoadbalancerCreateRequest struct {
+	Metadata LoadBalancerMetadataCreateIKS `json:"metadata"`
+	Spec     IKSLoadBalancerSpec           `json:"spec"`
+}
+
+type IKSLoadBalancerSpec struct {
+	Listeners []IKSLoadBalancerListener `json:"listeners"`
+	Security  LoadBalancerSecurity      `json:"security"`
+	Schema    int32                     `json:"schema"`
+}
+
+type IKSLoadBalancerListener struct {
+	Port     int32                `json:"port"`
+	Pool     IKSLoadBalancerPool  `json:"pool"`
+	Protocol int32                `json:"protocol"`
+	Security LoadBalancerSecurity `json:"security"`
+}
+
+type LoadBalancerSecurity struct {
+	SourceIps []string `json:"sourceIps"`
+}
+
+type IKSLoadBalancerPool struct {
+	Port              int32  `json:"port"`
+	Monitor           int32  `json:"monitor"`
+	LoadBalancingMode int32  `json:"loadBalancingMode"`
+	NodeGroupID       string `json:"nodeGroupID"`
+}
+
+type LoadBalancerMetadataUpdateIKS struct {
+	CloudAccountId  string            `json:"cloudAccountId"`
+	ResourceId      string            `json:"resourceId"`
+	ResourceVersion string            `json:"resourceVersion"`
+	Labels          map[string]string `json:"labels"`
+	ClusterUUID     string            `json:"clusteruuid"`
+}
+
+type LoadBalancerMetadataCreateIKS struct {
+	CloudAccountId string            `json:"cloudAccountId"`
+	Name           string            `json:"name"`
+	Labels         map[string]string `json:"labels"`
+	ClusterUUID    string            `json:"clusteruuid"`
+}
+
+type LoadBalancerUpdateRequestIKS struct {
+	Metadata LoadBalancerMetadataUpdateIKS `json:"metadata"`
+	Spec     LoadBalancerSpecUpdateIKS     `json:"spec"`
+}
+
+type LoadBalancerSpecUpdateIKS struct {
+	Listeners []IKSLoadBalancerListener `json:"listeners"`
+	Security  LoadBalancerSecurity      `json:"security"`
+}
+
+type LoadBalancerGetRequestIKS struct {
+	Metadata LoadBalancerMetadataReferenceIKS `json:"metadata"`
+}
+
+type LoadBalancerMetadataReferenceIKS struct {
+	CloudAccountId  string `json:"cloudAccountId"`
+	Name            string `json:"name,omitempty"`
+	ResourceId      string `json:"resourceId,omitempty"`
+	ResourceVersion string `json:"resourceVersion"`
+	ClusterUUID     string `json:"clusteruuid"`
+}
+
+type LoadBalancerSearchRequestIKS struct {
+	Metadata LoadBalancerMetadataSearchIKS `json:"metadata"`
+}
+
+type LoadBalancerMetadataSearchIKS struct {
+	CloudAccountId string            `json:"cloudAccountId"`
+	Labels         map[string]string `json:"labels"`
+	ClusterUUID    string            `json:"clusteruuid"`
+}
+
+type LoadBalancerDeleteRequestIKS struct {
+	Metadata LoadBalancerMetadataReferenceIKS `json:"metadata"`
 }
 
 type KubeconfigResponse struct {
@@ -497,7 +586,7 @@ func (client *IDCServicesClient) CreateIKSStorage(ctx context.Context, in *IKSSt
 	return storage, client.Cloudaccount, nil
 }
 
-func (client *IDCServicesClient) CreateIKSLoadBalancer(ctx context.Context, in *IKSLoadBalancerRequest, clusterUUID string) (*IKSLoadBalancer, *string, error) {
+func (client *IDCServicesClient) CreateIKSLoadBalancer(ctx context.Context, in *IKSLoadbalancerCreateRequest, clusterUUID string) (*IKSLoadBalancer, *string, error) {
 	params := struct {
 		Host         string
 		Cloudaccount string
