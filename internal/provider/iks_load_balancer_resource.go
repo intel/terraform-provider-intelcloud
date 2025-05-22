@@ -10,6 +10,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -24,6 +28,7 @@ var (
 type iksLBResourceModel struct {
 	ClusterUUID   types.String             `tfsdk:"cluster_uuid"`
 	LoadBalancers []models.IKSLoadBalancer `tfsdk:"load_balancers"`
+	Timeouts      *timeoutsModel           `tfsdk:"timeouts"`
 }
 
 // NewIKSLB is a helper function to simplify the provider implementation.
@@ -74,25 +79,65 @@ func (r *iksLBResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
 							Computed: true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+							},
 						},
 						"name": schema.StringAttribute{
 							Required: true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+							},
 						},
 						"vip_state": schema.StringAttribute{
 							Computed: true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+							},
 						},
 						"vip_ip": schema.StringAttribute{
 							Computed: true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+							},
 						},
 						"port": schema.Int64Attribute{
 							Required: true,
+							PlanModifiers: []planmodifier.Int64{
+								int64planmodifier.UseStateForUnknown(),
+							},
 						},
 						"pool_port": schema.Int64Attribute{
 							Computed: true,
+							PlanModifiers: []planmodifier.Int64{
+								int64planmodifier.UseStateForUnknown(),
+							},
 						},
 						"vip_type": schema.StringAttribute{
 							Required: true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+							},
 						},
+						"description": schema.StringAttribute{
+							Optional: true,
+							Computed: true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseStateForUnknown(),
+							},
+						},
+					},
+				},
+			},
+		},
+		Blocks: map[string]schema.Block{
+			"timeouts": schema.SingleNestedBlock{
+				Attributes: map[string]schema.Attribute{
+					"resource_timeout": schema.StringAttribute{
+						Optional:    true,
+						Computed:    true,
+						Description: "Timeout for loadbalancer resource operations",
+						Default:     stringdefault.StaticString(IKSLoadBalancerResourceName),
 					},
 				},
 			},
@@ -111,11 +156,21 @@ func (r *iksLBResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
+	// use timeouts if requested by the user
+	createTimeout, err := plan.Timeouts.GetTimeouts(IKSNodegroupResourceName)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid timeout", "Could not parse create timeout: "+err.Error())
+	}
+	// Use the timeout context
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
+
 	for idx := range plan.LoadBalancers {
 		inArg := itacservices.IKSLoadBalancerRequest{
-			Name:    plan.LoadBalancers[idx].Name.ValueString(),
-			Port:    int(plan.LoadBalancers[idx].Port.ValueInt64()),
-			VIPType: plan.LoadBalancers[idx].VipType.ValueString(),
+			Name:        plan.LoadBalancers[idx].Name.ValueString(),
+			Port:        int(plan.LoadBalancers[idx].Port.ValueInt64()),
+			VIPType:     plan.LoadBalancers[idx].VipType.ValueString(),
+			Description: plan.LoadBalancers[idx].Description.ValueString(),
 		}
 
 		ilbResp, _, err := r.client.CreateIKSLoadBalancer(ctx, &inArg, plan.ClusterUUID.ValueString())
@@ -131,6 +186,7 @@ func (r *iksLBResource) Create(ctx context.Context, req resource.CreateRequest, 
 		plan.LoadBalancers[idx].PoolPort = types.Int64Value(int64(ilbResp.PoolPort))
 		plan.LoadBalancers[idx].VipState = types.StringValue(ilbResp.VIPState)
 		plan.LoadBalancers[idx].VipIp = types.StringValue(ilbResp.VIPIP)
+		plan.LoadBalancers[idx].Description = types.StringValue(ilbResp.Description)
 	}
 
 	// Set state to fully populated data
@@ -161,9 +217,19 @@ func (r *iksLBResource) Read(ctx context.Context, req resource.ReadRequest, resp
 			)
 			return
 		}
+		state.LoadBalancers[idx].ID = types.StringValue(strconv.FormatInt(refreshedState.ID, 10))
+		state.LoadBalancers[idx].Name = types.StringValue(refreshedState.Name)
 		state.LoadBalancers[idx].PoolPort = types.Int64Value(int64(refreshedState.PoolPort))
 		state.LoadBalancers[idx].VipIp = types.StringValue(refreshedState.VIPIP)
 		state.LoadBalancers[idx].VipState = types.StringValue(refreshedState.VIPState)
+		state.LoadBalancers[idx].VipType = types.StringValue(refreshedState.VIPType)
+		state.LoadBalancers[idx].Port = types.Int64Value(int64(refreshedState.Port))
+		if refreshedState.Description != "" {
+			state.LoadBalancers[idx].Description = types.StringValue(refreshedState.Description)
+		} else {
+			state.LoadBalancers[idx].Description = types.StringNull()
+		}
+
 	}
 
 	// Set state to fully populated data
@@ -181,9 +247,54 @@ func (r *iksLBResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *iksLBResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	// To be implemented, currently API access is disabled
 }
 
 func (r *iksLBResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Retrieve import ID and save to id attribute
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	// Expect import ID in the format: cluster_id:id
+	clusterUUID := req.ID
+
+	// Basic validation
+	if clusterUUID == "" {
+		resp.Diagnostics.AddError(
+			"Invalid Import ID",
+			"Expected import ID to be the cluster UUID, got empty string.",
+		)
+		return
+	}
+
+	// Fetch LBs for this cluster
+	lbs, err := r.client.GetIKSLoadBalancerByClusterUUID(ctx, clusterUUID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to import IKS Load Balancer",
+			fmt.Sprintf("Error retrieving load balancers for cluster %s: %s", clusterUUID, err.Error()),
+		)
+		return
+	}
+
+	// Convert API response to state model
+	var lbModels []models.IKSLoadBalancer
+	for _, lb := range lbs.Items {
+		lbModels = append(lbModels, models.IKSLoadBalancer{
+			ID:          types.StringValue(strconv.FormatInt(lb.ID, 10)),
+			Name:        types.StringValue(lb.Name),
+			Port:        types.Int64Value(int64(lb.Port)),
+			PoolPort:    types.Int64Value(int64(lb.PoolPort)),
+			VipIp:       types.StringValue(lb.VIPIP),
+			VipState:    types.StringValue(lb.VIPState),
+			VipType:     types.StringValue(lb.VIPType),
+			Description: types.StringValue(lb.Description),
+		})
+	}
+
+	// Set the full state
+	resp.State.Set(ctx, &iksLBResourceModel{
+		ClusterUUID:   types.StringValue(clusterUUID),
+		LoadBalancers: lbModels,
+	})
+
+	// Set the import state
+	resp.State.SetAttribute(ctx, path.Root("cluster_uuid"), clusterUUID)
 }
