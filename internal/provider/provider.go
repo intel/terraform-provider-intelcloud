@@ -226,6 +226,7 @@ func (p *idcProvider) DataSources(_ context.Context) []func() datasource.DataSou
 		NewMachineImagesDataSource,
 		// NewKubernetesDataSource,
 		NewKubeconfigDataSource,
+		NewImisDataSource,
 	}
 }
 

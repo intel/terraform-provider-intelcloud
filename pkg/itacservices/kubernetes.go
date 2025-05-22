@@ -99,6 +99,7 @@ type IKSNodeGroupCreateRequest struct {
 	Name           string `json:"name"`
 	ProductType    string `json:"instanceType"`
 	InstanceTypeId string `json:"instancetypeid"`
+	WorkerImiId    string `json:"workerImi"`
 	SSHKeyNames    []SKey `json:"sshkeyname"`
 	UserDataURL    string `json:"userdataurl"`
 	Vnets          []Vnet `json:"vnets"`
