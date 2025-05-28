@@ -10,10 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -73,64 +70,86 @@ func (r *iksLBResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			"cluster_uuid": schema.StringAttribute{
 				Required: true,
 			},
-			"load_balancers": schema.ListNestedAttribute{
-				Required: true,
-				NestedObject: schema.NestedAttributeObject{
+		},
+		Blocks: map[string]schema.Block{
+			"load_balancers": schema.ListNestedBlock{
+				Description: "List of load balancers to be provisioned.",
+				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
 							Computed: true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.UseStateForUnknown(),
-							},
 						},
 						"name": schema.StringAttribute{
-							Required: true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.UseStateForUnknown(),
+							Required:    true,
+							Description: "Name of the load balancer.",
+						},
+						"schema": schema.StringAttribute{
+							Required:    true,
+							Description: "Schema under which the load balancer is created.",
+						},
+					},
+					Blocks: map[string]schema.Block{
+						"listeners": schema.ListNestedBlock{
+							Description: "List of listener configurations.",
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"port": schema.Int64Attribute{
+										Required:    true,
+										Description: "Listener port.",
+									},
+									"protocol": schema.StringAttribute{
+										Required:    true,
+										Description: "Listener protocol (e.g., LBProtocolTCP).",
+									},
+								},
+								Blocks: map[string]schema.Block{
+									"pool": schema.SingleNestedBlock{
+										Description: "Pool configuration for the listener.",
+										Attributes: map[string]schema.Attribute{
+											"port": schema.Int64Attribute{
+												Required:    true,
+												Description: "Pool port.",
+											},
+											"monitor": schema.StringAttribute{
+												Required:    true,
+												Description: "Health monitor type (e.g., https).",
+											},
+											"load_balancing_mode": schema.StringAttribute{
+												Required:    true,
+												Description: "Load balancing mode (e.g., roundRobin).",
+											},
+											"node_group_id": schema.StringAttribute{
+												Required:    true,
+												Description: "ID of the associated node group.",
+											},
+										},
+									},
+									"security": schema.SingleNestedBlock{
+										Description: "Security configuration for the load balancer listener.",
+										Attributes: map[string]schema.Attribute{
+											"source_ips": schema.ListAttribute{
+												ElementType: types.StringType,
+												Required:    true,
+												Description: "List of allowed source IPs.",
+											},
+										},
+									},
+								},
 							},
 						},
-						"vip_state": schema.StringAttribute{
-							Computed: true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.UseStateForUnknown(),
-							},
-						},
-						"vip_ip": schema.StringAttribute{
-							Computed: true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.UseStateForUnknown(),
-							},
-						},
-						"port": schema.Int64Attribute{
-							Required: true,
-							PlanModifiers: []planmodifier.Int64{
-								int64planmodifier.UseStateForUnknown(),
-							},
-						},
-						"pool_port": schema.Int64Attribute{
-							Computed: true,
-							PlanModifiers: []planmodifier.Int64{
-								int64planmodifier.UseStateForUnknown(),
-							},
-						},
-						"vip_type": schema.StringAttribute{
-							Required: true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.UseStateForUnknown(),
-							},
-						},
-						"description": schema.StringAttribute{
-							Optional: true,
-							Computed: true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.UseStateForUnknown(),
+						"security": schema.SingleNestedBlock{
+							Description: "Security configuration for the load balancer.",
+							Attributes: map[string]schema.Attribute{
+								"source_ips": schema.ListAttribute{
+									ElementType: types.StringType,
+									Required:    true,
+									Description: "List of allowed source IPs.",
+								},
 							},
 						},
 					},
 				},
 			},
-		},
-		Blocks: map[string]schema.Block{
 			"timeouts": schema.SingleNestedBlock{
 				Attributes: map[string]schema.Attribute{
 					"resource_timeout": schema.StringAttribute{
@@ -166,12 +185,28 @@ func (r *iksLBResource) Create(ctx context.Context, req resource.CreateRequest, 
 	defer cancel()
 
 	for idx := range plan.LoadBalancers {
-		inArg := itacservices.IKSLoadBalancerRequest{
-			Name:        plan.LoadBalancers[idx].Name.ValueString(),
-			Port:        int(plan.LoadBalancers[idx].Port.ValueInt64()),
-			VIPType:     plan.LoadBalancers[idx].VipType.ValueString(),
-			Description: plan.LoadBalancers[idx].Description.ValueString(),
+		inArg := itacservices.IKSLoadbalancerCreateRequest{
+			Metadata: itacservices.IKSLoadBalancerCreateMetadata{
+				Name:        plan.LoadBalancers[idx].Name.ValueString(),
+				ClusterUUID: plan.ClusterUUID.ValueString(),
+			},
 		}
+		for _, listener := range plan.LoadBalancers[idx].Listeners {
+			inArg.Spec.Listeners = append(inArg.Spec.Listeners, itacservices.IKSLoadBalancerListener{
+				Port:     listener.Port.ValueInt64(),
+				Protocol: listener.Protocol.ValueString(),
+				Pool: itacservices.IKSLoadBalancerPool{
+					Port:              listener.Pool.Port.String(),
+					Monitor:           listener.Pool.Monitor.String(),
+					LoadBalancingMode: listener.Pool.LoadBalancingMode.String(),
+					NodeGroupID:       listener.Pool.NodeGroupId.String(),
+				},
+				Security: itacservices.IKSLoadBalancerSecurity{
+					SourceIps: convertTFStringsToGoStrings(listener.Security.SourceIps),
+				},
+			})
+		}
+		inArg.Spec.Security.SourceIps = convertTFStringsToGoStrings(plan.LoadBalancers[idx].Security.SourceIps)
 
 		ilbResp, _, err := r.client.CreateIKSLoadBalancer(ctx, &inArg, plan.ClusterUUID.ValueString())
 		if err != nil {
@@ -183,10 +218,6 @@ func (r *iksLBResource) Create(ctx context.Context, req resource.CreateRequest, 
 		}
 
 		plan.LoadBalancers[idx].ID = types.StringValue(strconv.FormatInt(ilbResp.ID, 10))
-		plan.LoadBalancers[idx].PoolPort = types.Int64Value(int64(ilbResp.PoolPort))
-		plan.LoadBalancers[idx].VipState = types.StringValue(ilbResp.VIPState)
-		plan.LoadBalancers[idx].VipIp = types.StringValue(ilbResp.VIPIP)
-		plan.LoadBalancers[idx].Description = types.StringValue(ilbResp.Description)
 	}
 
 	// Set state to fully populated data
@@ -208,8 +239,8 @@ func (r *iksLBResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 
 	for idx, lb := range state.LoadBalancers {
-		vipIdNum, _ := strconv.ParseInt(lb.ID.ValueString(), 10, 64)
-		refreshedState, err := r.client.GetIKSLoadBalancerByID(ctx, state.ClusterUUID.ValueString(), vipIdNum)
+		lbId, _ := strconv.ParseInt(lb.ID.ValueString(), 10, 64)
+		refreshedState, err := r.client.GetIKSLoadBalancerByID(ctx, state.ClusterUUID.ValueString(), lbId)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error Reading IDC Compute IKS Load Balancer resource",
@@ -218,17 +249,6 @@ func (r *iksLBResource) Read(ctx context.Context, req resource.ReadRequest, resp
 			return
 		}
 		state.LoadBalancers[idx].ID = types.StringValue(strconv.FormatInt(refreshedState.ID, 10))
-		state.LoadBalancers[idx].Name = types.StringValue(refreshedState.Name)
-		state.LoadBalancers[idx].PoolPort = types.Int64Value(int64(refreshedState.PoolPort))
-		state.LoadBalancers[idx].VipIp = types.StringValue(refreshedState.VIPIP)
-		state.LoadBalancers[idx].VipState = types.StringValue(refreshedState.VIPState)
-		state.LoadBalancers[idx].VipType = types.StringValue(refreshedState.VIPType)
-		state.LoadBalancers[idx].Port = types.Int64Value(int64(refreshedState.Port))
-		if refreshedState.Description != "" {
-			state.LoadBalancers[idx].Description = types.StringValue(refreshedState.Description)
-		} else {
-			state.LoadBalancers[idx].Description = types.StringNull()
-		}
 
 	}
 
@@ -278,14 +298,8 @@ func (r *iksLBResource) ImportState(ctx context.Context, req resource.ImportStat
 	var lbModels []models.IKSLoadBalancer
 	for _, lb := range lbs.Items {
 		lbModels = append(lbModels, models.IKSLoadBalancer{
-			ID:          types.StringValue(strconv.FormatInt(lb.ID, 10)),
-			Name:        types.StringValue(lb.Name),
-			Port:        types.Int64Value(int64(lb.Port)),
-			PoolPort:    types.Int64Value(int64(lb.PoolPort)),
-			VipIp:       types.StringValue(lb.VIPIP),
-			VipState:    types.StringValue(lb.VIPState),
-			VipType:     types.StringValue(lb.VIPType),
-			Description: types.StringValue(lb.Description),
+			ID:   types.StringValue(strconv.FormatInt(lb.ID, 10)),
+			Name: types.StringValue(lb.Name),
 		})
 	}
 

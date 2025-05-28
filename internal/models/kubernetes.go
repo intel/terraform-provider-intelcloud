@@ -91,7 +91,7 @@ var VnetAttributes = map[string]attr.Type{
 	"networkinterfacevnetname": types.StringType,
 }
 
-type IKSLoadBalancer struct {
+type VipsLoadBalancer struct {
 	ID          types.String `tfsdk:"id"`
 	Name        types.String `tfsdk:"name"`
 	VipState    types.String `tfsdk:"vip_state"`
@@ -100,6 +100,44 @@ type IKSLoadBalancer struct {
 	PoolPort    types.Int64  `tfsdk:"pool_port"`
 	VipType     types.String `tfsdk:"vip_type"`
 	Description types.String `tfsdk:"description"`
+}
+
+//
+//var IKSLoadLalancerAttributes = map[string]attr.Type{
+//	"id":          types.StringType,
+//	"name":        types.StringType,
+//	"vip_state":   types.StringType,
+//	"vip_ip":      types.StringType,
+//	"port":        types.Int64Type,
+//	"pool_port":   types.Int64Type,
+//	"vip_type":    types.StringType,
+//	"description": types.StringType,
+//}
+
+type IKSLoadBalancer struct {
+	ID        types.String                   `tfsdk:"id"`
+	Name      types.String                   `tfsdk:"name"`
+	Schema    types.String                   `tfsdk:"schema"`
+	Listeners []IKSLoadBalancerListenerModel `tfsdk:"listeners"`
+	Security  IKSLoadBalancerSecurityModel   `tfsdk:"security"`
+}
+
+type IKSLoadBalancerListenerModel struct {
+	Port     types.Int64                  `tfsdk:"port"`
+	Protocol types.String                 `tfsdk:"protocol"`
+	Pool     IKSLoadBalancerPoolModel     `tfsdk:"pool"`
+	Security IKSLoadBalancerSecurityModel `tfsdk:"security"`
+}
+
+type IKSLoadBalancerPoolModel struct {
+	Port              types.Int64  `tfsdk:"port"`
+	Monitor           types.String `tfsdk:"monitor"`
+	LoadBalancingMode types.String `tfsdk:"load_balancing_mode"`
+	NodeGroupId       types.String `tfsdk:"node_group_id"`
+}
+
+type IKSLoadBalancerSecurityModel struct {
+	SourceIps []types.String `tfsdk:"source_ips"`
 }
 
 var IKSLoadLalancerAttributes = map[string]attr.Type{

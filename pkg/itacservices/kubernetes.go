@@ -28,9 +28,9 @@ var (
 	upgradeK8sClusterURL = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/upgrade"
 
 	createK8sFileStorageURL = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/storage"
-	createIKSLBURL          = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/vips"
-	getIKSLBURLByCluster    = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/vips"
-	getIKSLBURLByID         = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/vips/{{.VipID}}"
+	createIKSLBURL          = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/loadbalancers"
+	getIKSLBURLByCluster    = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/loadbalancers"
+	getIKSLBURLByID         = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/loadbalancers/{{.LbID}}"
 )
 
 type IKSClusters struct {
@@ -154,31 +154,31 @@ type IKSLBsByCluster struct {
 }
 
 type IKSLoadbalancerCreateRequest struct {
-	Metadata LoadBalancerMetadataCreateIKS `json:"metadata"`
+	Metadata IKSLoadBalancerCreateMetadata `json:"metadata"`
 	Spec     IKSLoadBalancerSpec           `json:"spec"`
 }
 
 type IKSLoadBalancerSpec struct {
 	Listeners []IKSLoadBalancerListener `json:"listeners"`
-	Security  LoadBalancerSecurity      `json:"security"`
+	Security  IKSLoadBalancerSecurity   `json:"security"`
 	Schema    int32                     `json:"schema"`
 }
 
 type IKSLoadBalancerListener struct {
-	Port     int32                `json:"port"`
-	Pool     IKSLoadBalancerPool  `json:"pool"`
-	Protocol int32                `json:"protocol"`
-	Security LoadBalancerSecurity `json:"security"`
+	Port     int64                   `json:"port"`
+	Pool     IKSLoadBalancerPool     `json:"pool"`
+	Protocol string                  `json:"protocol"`
+	Security IKSLoadBalancerSecurity `json:"security"`
 }
 
-type LoadBalancerSecurity struct {
+type IKSLoadBalancerSecurity struct {
 	SourceIps []string `json:"sourceIps"`
 }
 
 type IKSLoadBalancerPool struct {
-	Port              int32  `json:"port"`
-	Monitor           int32  `json:"monitor"`
-	LoadBalancingMode int32  `json:"loadBalancingMode"`
+	Port              string `json:"port"`
+	Monitor           string `json:"monitor"`
+	LoadBalancingMode string `json:"loadBalancingMode"`
 	NodeGroupID       string `json:"nodeGroupID"`
 }
 
@@ -190,7 +190,7 @@ type LoadBalancerMetadataUpdateIKS struct {
 	ClusterUUID     string            `json:"clusteruuid"`
 }
 
-type LoadBalancerMetadataCreateIKS struct {
+type IKSLoadBalancerCreateMetadata struct {
 	CloudAccountId string            `json:"cloudAccountId"`
 	Name           string            `json:"name"`
 	Labels         map[string]string `json:"labels"`
@@ -204,7 +204,7 @@ type LoadBalancerUpdateRequestIKS struct {
 
 type LoadBalancerSpecUpdateIKS struct {
 	Listeners []IKSLoadBalancerListener `json:"listeners"`
-	Security  LoadBalancerSecurity      `json:"security"`
+	Security  IKSLoadBalancerSecurity   `json:"security"`
 }
 
 type LoadBalancerGetRequestIKS struct {
@@ -644,17 +644,17 @@ func (client *IDCServicesClient) CreateIKSLoadBalancer(ctx context.Context, in *
 	return iksLB, client.Cloudaccount, nil
 }
 
-func (client *IDCServicesClient) GetIKSLoadBalancerByID(ctx context.Context, clusterUUID string, vipId int64) (*IKSLoadBalancer, error) {
+func (client *IDCServicesClient) GetIKSLoadBalancerByID(ctx context.Context, clusterUUID string, lbId int64) (*IKSLoadBalancer, error) {
 	params := struct {
 		Host         string
 		Cloudaccount string
 		ClusterUUID  string
-		VipID        int64
+		LbID         int64
 	}{
 		Host:         *client.Host,
 		Cloudaccount: *client.Cloudaccount,
 		ClusterUUID:  clusterUUID,
-		VipID:        vipId,
+		LbID:         lbId,
 	}
 
 	// Parse the template string with the provided data
