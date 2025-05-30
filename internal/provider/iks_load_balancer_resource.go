@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"terraform-provider-intelcloud/internal/models"
 	"terraform-provider-intelcloud/pkg/itacservices"
 
@@ -196,10 +195,10 @@ func (r *iksLBResource) Create(ctx context.Context, req resource.CreateRequest, 
 				Port:     listener.Port.ValueInt64(),
 				Protocol: listener.Protocol.ValueString(),
 				Pool: itacservices.IKSLoadBalancerPool{
-					Port:              listener.Pool.Port.String(),
-					Monitor:           listener.Pool.Monitor.String(),
-					LoadBalancingMode: listener.Pool.LoadBalancingMode.String(),
-					NodeGroupID:       listener.Pool.NodeGroupId.String(),
+					Port:              listener.Pool.Port.ValueInt64(),
+					Monitor:           listener.Pool.Monitor.ValueString(),
+					LoadBalancingMode: listener.Pool.LoadBalancingMode.ValueString(),
+					NodeGroupID:       listener.Pool.NodeGroupId.ValueString(),
 				},
 				Security: itacservices.IKSLoadBalancerSecurity{
 					SourceIps: convertTFStringsToGoStrings(listener.Security.SourceIps),
@@ -217,7 +216,7 @@ func (r *iksLBResource) Create(ctx context.Context, req resource.CreateRequest, 
 			return
 		}
 
-		plan.LoadBalancers[idx].ID = types.StringValue(strconv.FormatInt(ilbResp.ID, 10))
+		plan.LoadBalancers[idx].ID = types.StringValue(ilbResp.Metadata.ResourceID)
 	}
 
 	// Set state to fully populated data
@@ -239,8 +238,8 @@ func (r *iksLBResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 
 	for idx, lb := range state.LoadBalancers {
-		lbId, _ := strconv.ParseInt(lb.ID.ValueString(), 10, 64)
-		refreshedState, err := r.client.GetIKSLoadBalancerByID(ctx, state.ClusterUUID.ValueString(), lbId)
+		//lbId, _ := strconv.ParseInt(lb.ID.ValueString(), 10, 64)
+		refreshedState, err := r.client.GetIKSLoadBalancerByID(ctx, state.ClusterUUID.ValueString(), lb.ID.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error Reading IDC Compute IKS Load Balancer resource",
@@ -248,7 +247,7 @@ func (r *iksLBResource) Read(ctx context.Context, req resource.ReadRequest, resp
 			)
 			return
 		}
-		state.LoadBalancers[idx].ID = types.StringValue(strconv.FormatInt(refreshedState.ID, 10))
+		state.LoadBalancers[idx].ID = types.StringValue(refreshedState.Metadata.ResourceID)
 
 	}
 
@@ -297,9 +296,38 @@ func (r *iksLBResource) ImportState(ctx context.Context, req resource.ImportStat
 	// Convert API response to state model
 	var lbModels []models.IKSLoadBalancer
 	for _, lb := range lbs.Items {
+		var listeners []models.IKSLoadBalancerListenerModel
+		for _, l := range lb.Spec.Listeners {
+			var sourceIps []types.String
+			for _, ip := range l.Security.SourceIps {
+				sourceIps = append(sourceIps, types.StringValue(ip))
+			}
+			listeners = append(listeners, models.IKSLoadBalancerListenerModel{
+				Port:     types.Int64Value(int64(l.Port)),
+				Protocol: types.StringValue(string(l.Protocol)),
+				Security: models.IKSLoadBalancerSecurityModel{
+					SourceIps: sourceIps,
+				},
+				Pool: models.IKSLoadBalancerPoolModel{
+					Port:              types.Int64Value(int64(l.Pool.Port)),
+					Monitor:           types.StringValue(string(l.Pool.Monitor)),
+					LoadBalancingMode: types.StringValue(string(l.Pool.LoadBalancingMode)),
+					NodeGroupId:       types.StringValue(l.Pool.NodeGroupID),
+				},
+			})
+		}
+		var securitySourceIps []types.String
+		for _, ip := range lb.Spec.Security.SourceIps {
+			securitySourceIps = append(securitySourceIps, types.StringValue(ip))
+		}
 		lbModels = append(lbModels, models.IKSLoadBalancer{
-			ID:   types.StringValue(strconv.FormatInt(lb.ID, 10)),
-			Name: types.StringValue(lb.Name),
+			ID:   types.StringValue(lb.Metadata.ResourceID),
+			Name: types.StringValue(lb.Metadata.Name),
+			Security: models.IKSLoadBalancerSecurityModel{
+				SourceIps: securitySourceIps,
+			},
+			Schema:    types.StringValue(string(lb.Spec.Schema)),
+			Listeners: listeners,
 		})
 	}
 

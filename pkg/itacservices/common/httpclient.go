@@ -62,11 +62,10 @@ func MakePOSTAPICall(ctx context.Context, connURL, auth string, payload []byte) 
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	auth = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJvWUhGY3lhcXU3bFpnNzlfQkNpcEtNWkQ5YlRQOTZ4Z1lLQkt3b1kybUhnIn0.eyJleHAiOjE3NDg0NjM3NzksImlhdCI6MTc0ODQ2MDE3OSwianRpIjoiMTQzMGE1MDMtMDljOC00NGFkLWFjMjAtNDFkNDRmNzk0OTcxIiwiaXNzIjoiaHR0cHM6Ly9jbGllbnQtdG9rZW4uc3RhZ2luZy5hcGkuaWRjc2VydmljZS5uZXQvYXV0aC9yZWFsbXMvbWFzdGVyIiwiYXVkIjoiYWNjb3VudCIsInN1YiI6ImRkM2FmZDkzLThkYjgtNDA2Ni04MTAyLWNhZDM4MDc5MWVkNCIsInR5cCI6IkJlYXJlciIsImF6cCI6IllacmNtTjFhYUNZU2N1cnJVakx2VlhaNWhKIiwiYWNyIjoiMSIsInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJkZWZhdWx0LXJvbGVzLW1hc3RlciIsIm9mZmxpbmVfYWNjZXNzIiwidW1hX2F1dGhvcml6YXRpb24iXX0sInJlc291cmNlX2FjY2VzcyI6eyJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJzY29wZSI6ImVtYWlsIHByb2ZpbGUiLCJjbGllbnRIb3N0IjoiMTAuOTkuNC4xMzUiLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsInByZWZlcnJlZF91c2VybmFtZSI6InNlcnZpY2UtYWNjb3VudC15enJjbW4xYWFjeXNjdXJydWpsdnZ4ejVoaiIsImNsaWVudEFkZHJlc3MiOiIxMC45OS40LjEzNSIsImNsaWVudF9pZCI6IllacmNtTjFhYUNZU2N1cnJVakx2VlhaNWhKIn0.AOZG2TNth26Hh0HYV0NWyGBsvnl-pK7TvI0HxXzbUtQhTikqwztf7kT3QhSSpMLqZWUlPsUW0f5Z7xZrGw64pO9lnX1DWqOq3qLP3690P-9_hiZzOx9o1tZ_x--OIOxfVvlgXB43AUTijycQaRdMxtUeqGhzJsRjbyLRk4_RHGHc76-EuXx6MxnjetuFxuTVtIUBK-XPOJLJ5ZSFeIDgaJa1AJ_0gChbihS3ErzGQiAgrK45rtVUoD74y-iIh6fDH_qdxMZsysoGEhFxz8vTukZin3eLgLWYSY_TjD64v2U3Qz75MYqrR0ga9vpWfekkrg4AClloQLcMokLPeThsGw"
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", auth))
-	//if auth != "" {
-	//	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", auth))
-	//}
+	if auth != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", auth))
+	}
 	printRequest(req)
 	retries := 3
 	body := []byte{}

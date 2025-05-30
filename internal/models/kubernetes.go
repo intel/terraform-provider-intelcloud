@@ -136,6 +136,14 @@ type IKSLoadBalancerPoolModel struct {
 	NodeGroupId       types.String `tfsdk:"node_group_id"`
 }
 
+type LoadBalancerPoolModel struct {
+	Port                types.Int64       `tfsdk:"port"`
+	Monitor             types.String      `tfsdk:"monitor"`
+	LoadBalancingMode   types.String      `tfsdk:"load_balancing_mode"`
+	InstanceSelectors   map[string]string `tfsdk:"instance_selectors"`
+	InstanceResourceIds []string          `tfsdk:"instance_resource_ids"`
+}
+
 type IKSLoadBalancerSecurityModel struct {
 	SourceIps []types.String `tfsdk:"source_ips"`
 }
