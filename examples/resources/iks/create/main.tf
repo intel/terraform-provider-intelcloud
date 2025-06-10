@@ -9,7 +9,12 @@ terraform {
 }
 
 provider "intelcloud" {
-  region = var.idc_region
+  #region = var.idc_region
+  region = "us-staging-1"
+  endpoints = {
+    api  = "https://us-staging-1-sdk-api.eglb.intel.com"
+    auth = "https://client-token.staging.api.idcservice.net"
+  }
 }
 
 provider "random" {
@@ -32,9 +37,9 @@ resource "intelcloud_iks_cluster" "cluster1" {
   name               = "${local.name}-iks"
   kubernetes_version = var.kubernetes_version
 
-  storage = {
-    size_in_tb = var.size_in_tb
-  }
+  #storage = {
+  #  size_in_tb = var.size_in_tb
+  #}
   # specify custom timeouts for the resource
   timeouts {
     resource_timeout = "30m"
@@ -55,11 +60,44 @@ resource "intelcloud_iks_node_group" "ng1" {
 }
 
 # Output the details of the created IKS cluster
-output "iks_order" {
-  value = intelcloud_iks_cluster.cluster1
-}
+#output "iks_order" {
+#  value = intelcloud_iks_cluster.cluster1
+#}
 
 #################### Loadbalancer is not supported for now #####################
+resource "intelcloud_iks_lb" "lb1" {
+  cluster_uuid = intelcloud_iks_cluster.cluster1.id
+  load_balancers {
+    name   = "rk-tf-lb"
+    schema = "public"
+    listeners {
+      port     = "80"
+      protocol = "LBProtocolTCP"
+
+      pool {
+        port                = "80"
+        monitor             = "https"
+        load_balancing_mode = "roundRobin"
+        node_group_id       = intelcloud_iks_node_group.ng1.id
+      }
+      security {
+        source_ips = ["10.0.0.1"]
+      }
+    }
+
+    security {
+      source_ips = ["10.0.0.3"]
+    }
+  }
+  timeouts {
+    resource_timeout = "30m"
+  }
+}
+
+output "iks_order" {
+  value = intelcloud_iks_lb.lb1
+}
+
 /*
  resource "intelcloud_iks_lb" "lb1" {
    cluster_uuid = idc_iks_cluster.cluster1.id
