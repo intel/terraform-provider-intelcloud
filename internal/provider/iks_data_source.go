@@ -243,9 +243,9 @@ func (d *kubernetesDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		iksModel.NodeGroups = ngObj
 
 		// Map LoadBalancer/VIPs
-		vips := []models.IKSLoadBalancer{}
+		vips := []models.VipsLoadBalancer{}
 		for _, v := range cl.VIPs {
-			vip := models.IKSLoadBalancer{
+			vip := models.VipsLoadBalancer{
 				Name:     types.StringValue(v.Name),
 				VipState: types.StringValue(v.State),
 				VipIp:    types.StringValue(v.IP),

@@ -62,6 +62,7 @@ func MakePOSTAPICall(ctx context.Context, connURL, auth string, payload []byte) 
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", auth))
 	if auth != "" {
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", auth))
 	}
@@ -164,4 +165,37 @@ func printRequest(req *http.Request) {
 		// Recreate the body since io.ReadAll drains it
 		req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	}
+}
+
+type apiClientImpl struct{}
+
+// NewAPIClient returns a concrete implementation of the APIClient interface.
+func NewAPIClient() APIClient {
+	return &apiClientImpl{}
+}
+
+func (c *apiClientImpl) MakeGetAPICall(ctx context.Context, url, token string, headers map[string]string) (int, []byte, error) {
+	return MakeGetAPICall(ctx, url, token, nil)
+}
+
+func (c *apiClientImpl) MakePOSTAPICall(ctx context.Context, url, token string, payload []byte) (int, []byte, error) {
+	return MakePOSTAPICall(ctx, url, token, payload)
+}
+
+func (c *apiClientImpl) MakePutAPICall(ctx context.Context, url, token string, payload []byte) (int, []byte, error) {
+	return MakePutAPICall(ctx, url, token, payload)
+}
+
+func (c *apiClientImpl) MakeDeleteAPICall(ctx context.Context, url, token string, headers map[string]string) (int, []byte, error) {
+	return MakeDeleteAPICall(ctx, url, token, nil)
+}
+
+func (c *apiClientImpl) GenerateFilesystemLoginCredentials(ctx context.Context, resourceId string) (*string, error) {
+	// Placeholder: implement your actual logic here
+	return nil, fmt.Errorf("GenerateFilesystemLoginCredentials not implemented")
+}
+
+func (c *apiClientImpl) ParseString(tmpl string, data any) (string, error) {
+	// Placeholder: implement your actual logic here
+	return ParseString(tmpl, data)
 }

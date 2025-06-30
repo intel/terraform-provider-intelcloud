@@ -28,9 +28,11 @@ var (
 	upgradeK8sClusterURL = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/upgrade"
 
 	createK8sFileStorageURL = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/storage"
-	createIKSLBURL          = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/vips"
-	getIKSLBURLByCluster    = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/vips"
-	getIKSLBURLByID         = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/vips/{{.VipID}}"
+	createIKSLBURL          = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/loadbalancers"
+	getIKSLBURLByCluster    = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/loadbalancers"
+	getIKSLBURLByID         = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/loadbalancers/{{.LbID}}"
+	updateIKSLBURL          = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/loadbalancers/{{.LbID}}"
+	deleteIKSLBURLByID      = "{{.Host}}/v1/cloudaccounts/{{.Cloudaccount}}/iks/clusters/{{.ClusterUUID}}/loadbalancers/{{.LbID}}"
 )
 
 type IKSClusters struct {
@@ -122,24 +124,210 @@ type IKSStorageCreateRequest struct {
 	Size   string `json:"storagesize"`
 }
 
-type IKSLoadBalancerRequest struct {
-	Name    string `json:"name"`
-	Port    int    `json:"port"`
-	VIPType string `json:"viptype"`
-}
+// Old IKS LB
+//type IKSLoadBalancerRequest struct {
+//	Name        string `json:"name"`
+//	Port        int    `json:"port"`
+//	VIPType     string `json:"viptype"`
+//	Description string `json:"description"`
+//}
+
+//type IKSLoadBalancerRequest struct {
+//	Name        string `json:"name"`
+//	Port        int    `json:"port"`
+//	VIPType     string `json:"viptype"`
+//	Description string `json:"description"`
+//}
+//
+
+//	type IKSLoadBalancer struct {
+//		ID          int64  `json:"vipid"`
+//		Name        string `json:"name"`
+//		Port        int    `json:"port"`
+//		VIPType     string `json:"viptype"`
+//		VIPState    string `json:"vipstate"`
+//		VIPIP       string `json:"vipip"`
+//		PoolPort    int    `json:"poolport"`
+//		Description string `json:"description"`
+//	}
 
 type IKSLoadBalancer struct {
-	ID       int64  `json:"vipid"`
-	Name     string `json:"name"`
-	Port     int    `json:"port"`
-	VIPType  string `json:"viptype"`
-	VIPState string `json:"vipstate"`
-	VIPIP    string `json:"vipip"`
-	PoolPort int    `json:"poolport"`
+	Metadata IKSLoadBalancerMetadata `json:"metadata"`
+	Spec     IKSLoadBalancerSpec     `json:"spec"`
+	Status   IKSLoadBalancerStatus   `json:"status"`
+}
+
+type IKSLoadBalancerItems struct {
+	Metadata IKSLoadBalancerMetadata `json:"metadata"`
+	Spec     LoadBalancerSpec        `json:"spec"`
+	Status   IKSLoadBalancerStatus   `json:"status"`
+}
+
+type IKSLoadBalancerMetadata struct {
+	CloudAccountID  string            `json:"cloudAccountId"`
+	Name            string            `json:"name"`
+	ResourceID      string            `json:"resourceId"`
+	ResourceVersion string            `json:"resourceVersion"`
+	Labels          map[string]string `json:"labels,omitempty"`
+	Reserved1       string            `json:"reserved1,omitempty"` // Deprecated
+}
+
+type IKSLoadBalancerStatus struct {
+	Conditions IKSLoadBalancerConditionsStatus `json:"conditions"`
+	Listeners  []IKSLoadBalancerListenerStatus `json:"listeners"`
+	State      string                          `json:"state"`
+	VIP        string                          `json:"vip"`
+	Message    string                          `json:"message"`
+}
+
+type IKSLoadBalancerListenerStatus struct {
+	Name        string                            `json:"name"`
+	VipID       int32                             `json:"vipId"`
+	Message     string                            `json:"message"`
+	PoolMembers []IKSLoadBalancerPoolStatusMember `json:"poolMembers"`
+	PoolID      int32                             `json:"poolId"`
+	State       string                            `json:"state"`
+	Port        int32                             `json:"port"`
+}
+
+type IKSLoadBalancerConditionsStatus struct {
+	Listeners           []IKSLoadBalancerConditionsListenerStatus `json:"listeners"`
+	FirewallRuleCreated bool                                      `json:"firewallRuleCreated"`
+}
+
+type IKSLoadBalancerPoolStatusMember struct {
+	InstanceRef string `json:"instanceRef"`
+	IP          string `json:"ip"`
+}
+
+type IKSLoadBalancerConditionsListenerStatus struct {
+	Port          int32 `json:"port"`
+	PoolCreated   bool  `json:"poolCreated"`
+	VipCreated    bool  `json:"vipCreated"`
+	VipPoolLinked bool  `json:"vipPoolLinked"`
 }
 
 type IKSLBsByCluster struct {
-	Items []IKSLoadBalancer `json:"response"`
+	Items []IKSLoadBalancerItems `json:"items"`
+}
+
+type IKSLoadbalancerCreateRequest struct {
+	Metadata IKSLoadBalancerCreateMetadata `json:"metadata"`
+	Spec     IKSLoadBalancerSpec           `json:"spec"`
+}
+
+type LoadBalancerSpec struct {
+	Listeners []LoadBalancerListener  `json:"listeners"`
+	Security  IKSLoadBalancerSecurity `json:"security"`
+	Schema    string                  `json:"schema"`
+}
+
+type LoadBalancerListener struct {
+	Port     int32                   `json:"port"`
+	Pool     LoadBalancerPool        `json:"pool"`
+	Protocol string                  `json:"protocol"` // e.g., "TCP", "UDP", etc.
+	Security IKSLoadBalancerSecurity `json:"security"`
+}
+
+type IKSLoadBalancerUpdateRequest struct {
+	Metadata IKSLoadBalancerUpdateMetadata `json:"metadata"`
+	Spec     IKSLoadBalancerUpdateSpec     `json:"spec"`
+}
+
+type IKSLoadBalancerUpdateMetadata struct {
+	CloudAccountId  string            `json:"cloudAccountid"`
+	ResourceId      string            `json:"resourceid"`
+	ResourceVersion string            `json:"resourceVersion"`
+	Labels          map[string]string `json:"labels,omitempty"`
+	ClusterUUID     string            `json:"clusteruuid"`
+}
+
+type IKSLoadBalancerUpdateSpec struct {
+	Listeners []IKSLoadBalancerListener `json:"listeners"`
+	Security  IKSLoadBalancerSecurity   `json:"security"`
+}
+
+type IKSLoadBalancerSpec struct {
+	Listeners []IKSLoadBalancerListener `json:"listeners"`
+	Security  IKSLoadBalancerSecurity   `json:"security"`
+	Schema    string                    `json:"schema"`
+}
+
+type IKSLoadBalancerListener struct {
+	Port     int64                   `json:"port"`
+	Pool     IKSLoadBalancerPool     `json:"pool"`
+	Protocol string                  `json:"protocol"`
+	Security IKSLoadBalancerSecurity `json:"security"`
+}
+
+type IKSLoadBalancerSecurity struct {
+	SourceIps []string `json:"sourceips"`
+}
+
+type LoadBalancerPool struct {
+	Port                int32             `json:"port"`
+	Monitor             string            `json:"monitor"`
+	LoadBalancingMode   string            `json:"loadbalancingmode"`
+	InstanceSelectors   map[string]string `json:"instanceSelectors,omitempty"`
+	InstanceResourceIds []string          `json:"instanceResourceIds,omitempty"`
+}
+
+type IKSLoadBalancerPool struct {
+	Port              int64  `json:"port"`
+	Monitor           string `json:"monitor"`
+	LoadBalancingMode string `json:"loadBalancingMode"`
+	NodeGroupID       string `json:"nodeGroupID"`
+}
+
+type LoadBalancerMetadataUpdateIKS struct {
+	CloudAccountId  string            `json:"cloudAccountId"`
+	ResourceId      string            `json:"resourceId"`
+	ResourceVersion string            `json:"resourceVersion"`
+	Labels          map[string]string `json:"labels"`
+	ClusterUUID     string            `json:"clusteruuid"`
+}
+
+type IKSLoadBalancerCreateMetadata struct {
+	CloudAccountId string            `json:"cloudAccountId"`
+	Name           string            `json:"name"`
+	Labels         map[string]string `json:"labels"`
+	ClusterUUID    string            `json:"clusteruuid"`
+}
+
+type LoadBalancerUpdateRequestIKS struct {
+	Metadata LoadBalancerMetadataUpdateIKS `json:"metadata"`
+	Spec     LoadBalancerSpecUpdateIKS     `json:"spec"`
+}
+
+type LoadBalancerSpecUpdateIKS struct {
+	Listeners []IKSLoadBalancerListener `json:"listeners"`
+	Security  IKSLoadBalancerSecurity   `json:"security"`
+}
+
+type LoadBalancerGetRequestIKS struct {
+	Metadata LoadBalancerMetadataReferenceIKS `json:"metadata"`
+}
+
+type LoadBalancerMetadataReferenceIKS struct {
+	CloudAccountId  string `json:"cloudAccountId"`
+	Name            string `json:"name,omitempty"`
+	ResourceId      string `json:"resourceId,omitempty"`
+	ResourceVersion string `json:"resourceVersion"`
+	ClusterUUID     string `json:"clusteruuid"`
+}
+
+type LoadBalancerSearchRequestIKS struct {
+	Metadata LoadBalancerMetadataSearchIKS `json:"metadata"`
+}
+
+type LoadBalancerMetadataSearchIKS struct {
+	CloudAccountId string            `json:"cloudAccountId"`
+	Labels         map[string]string `json:"labels"`
+	ClusterUUID    string            `json:"clusteruuid"`
+}
+
+type LoadBalancerDeleteRequestIKS struct {
+	Metadata LoadBalancerMetadataReferenceIKS `json:"metadata"`
 }
 
 type KubeconfigResponse struct {
@@ -495,7 +683,7 @@ func (client *IDCServicesClient) CreateIKSStorage(ctx context.Context, in *IKSSt
 	return storage, client.Cloudaccount, nil
 }
 
-func (client *IDCServicesClient) CreateIKSLoadBalancer(ctx context.Context, in *IKSLoadBalancerRequest, clusterUUID string) (*IKSLoadBalancer, *string, error) {
+func (client *IDCServicesClient) CreateIKSLoadBalancer(ctx context.Context, in *IKSLoadbalancerCreateRequest, clusterUUID string) (*IKSLoadBalancerItems, *string, error) {
 	params := struct {
 		Host         string
 		Cloudaccount string
@@ -529,20 +717,19 @@ func (client *IDCServicesClient) CreateIKSLoadBalancer(ctx context.Context, in *
 		return nil, nil, common.MapHttpError(retcode, retval)
 	}
 
-	iksLB := &IKSLoadBalancer{}
+	iksLB := &IKSLoadBalancerItems{}
 	if err := json.Unmarshal(retval, iksLB); err != nil {
-		return nil, nil, fmt.Errorf("error parsing load balancer response")
+		return nil, nil, fmt.Errorf("error parsing load balancer response: %v", err)
 	}
 
-	backoffTimer := retry.NewConstant(5 * time.Second)
-	backoffTimer = retry.WithMaxDuration(3000*time.Second, backoffTimer)
+	backoffTimer := retry.NewConstant(common.DefaultRetryInterval)
 
 	if err := retry.Do(ctx, backoffTimer, func(_ context.Context) error {
-		iksLB, err = client.GetIKSLoadBalancerByID(ctx, clusterUUID, iksLB.ID)
+		iksLB, err = client.GetIKSLoadBalancerByID(ctx, clusterUUID, iksLB.Metadata.ResourceID)
 		if err != nil {
 			return fmt.Errorf("error reading node group state")
 		}
-		if iksLB.VIPState == "Active" {
+		if iksLB.Status.State == "Active" {
 			return nil
 		} else {
 			return retry.RetryableError(fmt.Errorf("iks load balancer state not ready, retry again"))
@@ -554,17 +741,17 @@ func (client *IDCServicesClient) CreateIKSLoadBalancer(ctx context.Context, in *
 	return iksLB, client.Cloudaccount, nil
 }
 
-func (client *IDCServicesClient) GetIKSLoadBalancerByID(ctx context.Context, clusterUUID string, vipId int64) (*IKSLoadBalancer, error) {
+func (client *IDCServicesClient) GetIKSLoadBalancerByID(ctx context.Context, clusterUUID, lbId string) (*IKSLoadBalancerItems, error) {
 	params := struct {
 		Host         string
 		Cloudaccount string
 		ClusterUUID  string
-		VipID        int64
+		LbID         string
 	}{
 		Host:         *client.Host,
 		Cloudaccount: *client.Cloudaccount,
 		ClusterUUID:  clusterUUID,
-		VipID:        vipId,
+		LbID:         lbId,
 	}
 
 	// Parse the template string with the provided data
@@ -577,13 +764,13 @@ func (client *IDCServicesClient) GetIKSLoadBalancerByID(ctx context.Context, clu
 	if err != nil {
 		return nil, fmt.Errorf("error reading load balancer resource by id")
 	}
-	tflog.Debug(ctx, "iks load balancer read response", map[string]any{"retcode": retcode, "retval": string(retval)})
+	tflog.Debug(ctx, "iks load balancer by ID read response", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
 		return nil, common.MapHttpError(retcode, retval)
 	}
 
-	iksLB := IKSLoadBalancer{}
+	iksLB := IKSLoadBalancerItems{}
 	if err := json.Unmarshal(retval, &iksLB); err != nil {
 		return nil, fmt.Errorf("error parsing iks load balancer get response")
 	}
@@ -611,7 +798,7 @@ func (client *IDCServicesClient) GetIKSLoadBalancerByClusterUUID(ctx context.Con
 	if err != nil {
 		return nil, fmt.Errorf("error reading load balancer resource by cluster")
 	}
-	tflog.Debug(ctx, "iks load balancer read response", map[string]any{"retcode": retcode, "retval": string(retval)})
+	tflog.Debug(ctx, "iks load balancer by Cluster ID read response", map[string]any{"retcode": retcode, "retval": string(retval)})
 
 	if retcode != http.StatusOK {
 		return nil, common.MapHttpError(retcode, retval)
@@ -619,7 +806,7 @@ func (client *IDCServicesClient) GetIKSLoadBalancerByClusterUUID(ctx context.Con
 
 	resp := IKSLBsByCluster{}
 	if err := json.Unmarshal(retval, &resp); err != nil {
-		return nil, fmt.Errorf("error parsing iks load balancer get response")
+		return nil, fmt.Errorf("error parsing iks load balancer get response: %v", err)
 	}
 	return &resp, nil
 }
@@ -808,6 +995,98 @@ func (client *IDCServicesClient) UpdateNodeGroup(ctx context.Context, in *Update
 		}
 	}); err != nil {
 		return fmt.Errorf("iks nodegroup state not ready after maximum retries")
+	}
+
+	return nil
+}
+
+func (client *IDCServicesClient) UpdateIKSLoadBalancer(ctx context.Context, in *IKSLoadBalancerUpdateRequest, clusterUUID, lbId string) error {
+	params := struct {
+		Host         string
+		Cloudaccount string
+		ClusterUUID  string
+		LbID         string
+	}{
+		Host:         *client.Host,
+		Cloudaccount: *client.Cloudaccount,
+		ClusterUUID:  clusterUUID,
+		LbID:         lbId,
+	}
+
+	// Parse the template string with the provided data
+	parsedURL, err := client.APIClient.ParseString(updateIKSLBURL, params)
+	if err != nil {
+		return fmt.Errorf("error parsing the url")
+	}
+
+	inArgs, err := json.MarshalIndent(in, "", "    ")
+	if err != nil {
+		return fmt.Errorf("error parsing input arguments")
+	}
+
+	tflog.Debug(ctx, "iks load balancer uddate api request", map[string]any{"url": parsedURL, "inArgs": string(inArgs)})
+	retcode, retval, err := client.APIClient.MakePutAPICall(ctx, parsedURL, *client.Apitoken, inArgs)
+
+	if err != nil {
+		return fmt.Errorf("error reading iks load balancer update response")
+	}
+	tflog.Debug(ctx, "iks load balancer update api response", map[string]any{"retcode": retcode, "retval": string(retval)})
+
+	if retcode != http.StatusOK {
+		return common.MapHttpError(retcode, retval)
+	}
+
+	iksLB := &IKSLoadBalancerItems{}
+	if err := json.Unmarshal(retval, iksLB); err != nil {
+		return fmt.Errorf("error parsing load balancer response: %v", err)
+	}
+
+	backoffTimer := retry.NewConstant(common.DefaultRetryInterval)
+
+	if err := retry.Do(ctx, backoffTimer, func(_ context.Context) error {
+		iksLB, err = client.GetIKSLoadBalancerByID(ctx, clusterUUID, lbId)
+		if err != nil {
+			return fmt.Errorf("error reading node group state")
+		}
+		if iksLB.Status.State == "Active" {
+			return nil
+		} else {
+			return retry.RetryableError(fmt.Errorf("iks load balancer state not ready, retry again"))
+		}
+	}); err != nil {
+		return fmt.Errorf("iks node group state not ready after maximum retries")
+	}
+
+	return nil
+}
+
+func (client *IDCServicesClient) DeleteIKSLoadBalancer(ctx context.Context, clusterUUID, lbId string) error {
+	params := struct {
+		Host         string
+		Cloudaccount string
+		ClusterUUID  string
+		LbID         string
+	}{
+		Host:         *client.Host,
+		Cloudaccount: *client.Cloudaccount,
+		ClusterUUID:  clusterUUID,
+		LbID:         lbId,
+	}
+
+	// Parse the template string with the provided data
+	parsedURL, err := client.APIClient.ParseString(deleteIKSLBURLByID, params)
+	if err != nil {
+		return fmt.Errorf("error parsing the url to delete IKS load balancer")
+	}
+
+	retcode, retval, err := common.MakeDeleteAPICall(ctx, parsedURL, *client.Apitoken, nil)
+	if err != nil {
+		return fmt.Errorf("error reading sshkey by resource id")
+	}
+	tflog.Debug(ctx, "iks delete IKS load balancer by ID api response", map[string]any{"retcode": retcode, "retval": string(retval)})
+
+	if retcode != http.StatusOK {
+		return common.MapHttpError(retcode, retval)
 	}
 
 	return nil
