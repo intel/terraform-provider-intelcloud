@@ -95,6 +95,7 @@ func (r *iksNodeGroupResource) Schema(_ context.Context, _ resource.SchemaReques
 			},
 			"imiid": schema.StringAttribute{
 				Computed: true,
+				Optional: true,
 			},
 			"state": schema.StringAttribute{
 				Computed: true,
@@ -195,6 +196,10 @@ func (r *iksNodeGroupResource) Create(ctx context.Context, req resource.CreateRe
 			AvailabilityZoneName:     vnetResp.Spec.AvailabilityZone,
 			NetworkInterfaceVnetName: vnetResp.Metadata.Name,
 		})
+
+	if !plan.IMIId.IsNull() && !plan.IMIId.IsUnknown() {
+		inArg.WorkerImiId = plan.IMIId.ValueString()
+	}
 
 	nodeGroupResp, _, err := r.client.CreateIKSNodeGroup(ctx, &inArg, plan.ClusterUUID.ValueString(), false)
 	if err != nil {

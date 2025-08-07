@@ -59,7 +59,7 @@ func NewClient(ctx context.Context, host, tokenSvc, cloudaccount, clientid, clie
 
 	req, err := http.NewRequest("POST", parsedURL, bytes.NewBufferString(data.Encode()))
 	if err != nil {
-		return nil, fmt.Errorf("error creating ITAC Token request")
+		return nil, fmt.Errorf("error creating ITAC Token request: %v", err)
 	}
 
 	authStr := fmt.Sprintf("%s:%s", *clientid, *clientsecret)
