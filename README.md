@@ -1,3 +1,12 @@
+## THIS PROJECT IS ARCHIVED 
+
+Intel will not provide or guarantee development of or support for this project, including but not limited to, maintenance, bug fixes, new releases or updates. 
+
+Patches to this project are no longer accepted by Intel.   
+
+This project has been identified as having known security issues. 
+
+Contact: webadmin@linux.intel.com
 # Intel Tiber AI Cloud Terraform Provider 
 
 This Intel Tiber AI Cloud provider plugin brings the power of Hashicorp's Terraform to Intel Tiber AI Cloud. It allows developers to model and manage their AI Cloud Resources through HCL IaaC (Infrastructure as a Code).
