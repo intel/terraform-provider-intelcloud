@@ -382,6 +382,9 @@ func (r *filesystemResource) Update(ctx context.Context, req resource.UpdateRequ
 		}
 		currState.Spec.Size = plan.Spec.Size
 
+		// set timeout again for consistency
+		currState.Timeouts = plan.Timeouts
+
 		// Set refreshed state
 		diags = resp.State.Set(ctx, currState)
 		resp.Diagnostics.Append(diags...)
